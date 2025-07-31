@@ -1,0 +1,156 @@
+<%- include('../layout') %>
+
+<!-- Additional content in head -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add any additional JavaScript for this page
+});
+</script>
+
+<div class="row">
+    <div class="col-12">
+        <h1 class="h2 mb-4">
+            <i class="fas fa-users me-2"></i>Manage Project Managers
+        </h1>
+        
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
+                <li class="breadcrumb-item active">Manage Managers</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Create New Manager -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-user-plus me-2"></i>Create New Project Manager
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/create-manager">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username *</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="username" 
+                               name="username" 
+                               value="<%= typeof formData !== 'undefined' ? formData.username || '' : '' %>"
+                               required 
+                               maxlength="30"
+                               pattern="[a-zA-Z0-9_]+"
+                               title="Only letters, numbers, and underscores allowed">
+                        <div class="form-text">3-30 characters, letters, numbers, and underscores only</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password *</label>
+                        <input type="password" 
+                               class="form-control" 
+                               id="password" 
+                               name="password" 
+                               required 
+                               minlength="8"
+                               maxlength="128">
+                        <div class="form-text">
+                            At least 8 characters with uppercase, lowercase, number, and special character
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-user-plus me-2"></i>Create Manager
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-info-circle me-2"></i>Security Note
+                </h6>
+            </div>
+            <div class="card-body">
+                <small class="text-muted">
+                    Project Managers can create and manage tasks for employees. 
+                    Only create accounts for trusted users who need task management privileges.
+                </small>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Existing Managers -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="card-title mb-0">
+                    <i class="fas fa-users me-2"></i>Existing Project Managers
+                </h6>
+                <span class="badge bg-primary"><%= managers.length %> manager(s)</span>
+            </div>
+            <div class="card-body">
+                <% if (managers.length === 0) { %>
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-users fa-3x mb-3"></i>
+                        <p>No Project Manager accounts exist yet. Create the first one using the form on the left.</p>
+                    </div>
+                <% } else { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% managers.forEach(manager => { %>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-user-tie me-2 text-primary"></i>
+                                                <strong><%= manager.username %></strong>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                <%= new Date(manager.created_at).toLocaleDateString() %>
+                                            </small>
+                                        </td>
+                                        <td>
+                                            <form method="POST" action="/admin/delete-manager" class="d-inline">
+                                                <input type="hidden" name="managerId" value="<%= manager.id %>">
+                                                <button type="submit" 
+                                                        class="btn btn-sm btn-outline-danger" 
+                                                        data-confirm-delete 
+                                                        title="Delete Manager Account">
+                                                    <i class="fas fa-trash me-1"></i>Delete
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-warning" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Important:</strong> 
+            Deleting a Project Manager account is permanent and cannot be undone. 
+            Any tasks created by the deleted manager will remain in the system but cannot be managed by them.
+        </div>
+    </div>
+</div>
