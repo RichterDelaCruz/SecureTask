@@ -17,6 +17,8 @@ const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
 const resetRoutes = require('./routes/reset');
 const checkSessionTimeout = require('./middleware/sessionTimeout');
+const noCache = require('./middleware/noCache');
+const isProduction = process.env.NODE_ENV === 'production';
 
 // Import middleware
 const { authenticateUser, authorizeRole } = require('./middleware/auth');
@@ -30,11 +32,23 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+            scriptSrc: ["'self'", "https:"],
             imgSrc: ["'self'", "data:", "https:"],
-        },
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [],
+        }
     },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    frameguard: { action: "deny" },
+    hsts: {
+        maxAge: 63072000, // 2 years
+        includeSubDomains: true,
+        preload: true
+    },
+    xssFilter: true,
+    noSniff: true,
+    dnsPrefetchControl: { allow: false }
 }));
 
 // Rate limiting
@@ -67,22 +81,25 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // Static files
-app.use(express.static(path.join(__dirname, 'public')));
+app.use('/public', noCache, express.static(path.join(__dirname, 'public')));
 
 // Session configuration
 app.use(session({
-    secret: process.env.SESSION_SECRET || 'your-super-secret-key-change-in-production',
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        secure: false, // Set to true if using HTTPS
-        httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 24 // 24 hours
-    }
+  secret: process.env.SESSION_SECRET || 'your-super-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: isProduction,            // Only send cookie over HTTPS in production
+    sameSite: 'lax',                 // Helps mitigate CSRF
+    maxAge: 1000 * 60 * 60 * 24      // 24 hours
+  }
 }));
+
 
 // 👇 Add session timeout middleware right after session
 app.use(checkSessionTimeout);
+app.use(noCache); // this applies to all routes
 
 // CSRF protection
 app.use(csurf());
@@ -102,9 +119,9 @@ setDbHelpers(dbHelpers);
 
 // Routes
 app.use('/', authRoutes);
-app.use('/dashboard', authenticateUser, dashboardRoutes);
-app.use('/admin', authenticateUser, authorizeRole(['Administrator']), adminRoutes);
-app.use('/account', authenticateUser, accountRoutes);
+app.use('/dashboard', authenticateUser, noCache, dashboardRoutes);
+app.use('/admin', authenticateUser, authorizeRole(['Administrator']), noCache, adminRoutes);
+app.use('/account', authenticateUser, noCache, accountRoutes);
 
 // Logout route
 app.post('/logout', authenticateUser, (req, res) => {
