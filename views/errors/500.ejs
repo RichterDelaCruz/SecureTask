@@ -1,18 +1,18 @@
 <%
-var title = 'Error - SecureTask';
+var title = '500 Internal Server Error - SecureTask';
 var body = `
 <div class="row justify-content-center">
     <div class="col-md-8 col-lg-6">
         <div class="card">
             <div class="card-body text-center py-5">
                 <div class="display-1 text-danger mb-4">
-                    <i class="fas fa-exclamation-triangle"></i>
+                    <i class="fas fa-server"></i>
                 </div>
                 
-                <h1 class="h3 text-danger mb-3">Oops! Something went wrong</h1>
+                <h1 class="h3 text-danger mb-3">Internal Server Error</h1>
                 
                 <p class="text-muted mb-4">
-                    ${message || 'An unexpected error occurred'}
+                    Something went wrong on our end. We're working to fix it.
                 </p>
                 
                 <div class="d-grid gap-2 d-md-block">
@@ -26,16 +26,16 @@ var body = `
                         </a>
                     `}
                     
-                    <button onclick="history.back()" class="btn btn-outline-secondary">
-                        <i class="fas fa-arrow-left me-2"></i>Go Back
+                    <button onclick="location.reload()" class="btn btn-outline-secondary">
+                        <i class="fas fa-redo me-2"></i>Try Again
                     </button>
                 </div>
                 
-                ${typeof errorId !== 'undefined' && errorId ? `
-                    <div class="mt-4 p-3 bg-light rounded">
+                ${errorId ? `
+                    <div class="mt-4">
                         <small class="text-muted">
-                            <strong>Error ID:</strong> <code>${errorId}</code><br>
-                            <em>Please provide this ID when contacting support</em>
+                            Error ID: ${errorId}<br>
+                            Please include this ID when contacting support.
                         </small>
                     </div>
                 ` : ''}
@@ -52,4 +52,4 @@ var body = `
 `;
 %>
 
-<%- include('layout', { title: title, body: body }) %>
+<%- include('../layout', { title: title, body: body }) %>

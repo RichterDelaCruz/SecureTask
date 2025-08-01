@@ -17,8 +17,10 @@ const accountRoutes = require('./routes/account');
 const { authenticateUser, authorizeRole } = require('./middleware/auth');
 const { addSecurityHeaders } = require('./middleware/authorization');
 const { validateSessionIntegrity, sensitiveOperationLimiter } = require('./middleware/authz-audit');
+const { errorHandler, notFoundHandler, asyncErrorHandler } = require('./middleware/error-handler');
 const { securityLogger, setDbHelpers } = require('./utils/logger');
 const { validateRequest } = require('./utils/validation');
+const { logAuthenticationEvent, SECURITY_EVENTS } = require('./utils/security-logger');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -125,7 +127,9 @@ app.use('/account', authenticateUser, accountRoutes);
 // Logout route
 app.post('/logout', authenticateUser, (req, res) => {
     const username = req.session.user?.username;
-    securityLogger.info(`User logout`, { username, ip: req.ip });
+    
+    // Log logout event
+    logAuthenticationEvent(SECURITY_EVENTS.LOGOUT, req, true, { username });
     
     req.session.destroy((err) => {
         if (err) {
@@ -139,35 +143,9 @@ app.post('/logout', authenticateUser, (req, res) => {
     });
 });
 
-// Error handling middleware
-app.use((req, res, next) => {
-    securityLogger.warn('404 Not Found', { 
-        url: req.url, 
-        method: req.method, 
-        ip: req.ip,
-        userAgent: req.get('User-Agent')
-    });
-    res.status(404).render('error', { 
-        message: 'Page not found', 
-        user: req.session.user 
-    });
-});
-
-app.use((err, req, res, next) => {
-    securityLogger.error('Application error', { 
-        error: err.message, 
-        stack: err.stack,
-        url: req.url,
-        method: req.method,
-        ip: req.ip,
-        user: req.session.user?.username
-    });
-    
-    res.status(500).render('error', { 
-        message: 'Internal server error', 
-        user: req.session.user 
-    });
-});
+// Error handling middleware - use centralized handlers
+app.use(notFoundHandler);
+app.use(errorHandler);
 
 app.listen(PORT, () => {
     console.log(`SecureTask server running on port ${PORT}`);

@@ -70,7 +70,9 @@ const validateSessionIntegrity = (req, res, next) => {
                 if (err) {
                     securityLogger.error('Failed to destroy corrupted session', {
                         error: err.message,
-                        ip: req.ip
+                        ip: req.ip,
+                        userAgent: req.get('User-Agent'),
+                        timestamp: new Date().toISOString()
                     });
                 }
             });

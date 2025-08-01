@@ -4,6 +4,13 @@ const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
 const { redirectIfAuthenticated } = require('../middleware/auth');
+const { asyncErrorHandler } = require('../middleware/error-handler');
+const { 
+    logAuthenticationEvent, 
+    logSystemEvent, 
+    SECURITY_EVENTS, 
+    RISK_LEVELS 
+} = require('../utils/security-logger');
 
 const router = express.Router();
 
@@ -32,7 +39,7 @@ router.post('/register',
     redirectIfAuthenticated,
     validationSets.registration,
     handleValidationErrors,
-    async (req, res) => {
+    asyncErrorHandler(async (req, res) => {
         try {
             const { username, password } = req.body;
 
@@ -65,20 +72,17 @@ router.post('/register',
                     // Create new user with Employee role
                     dbHelpers.createUser(username, passwordHash, 'Employee', function(err) {
                         if (err) {
-                            securityLogger.error('Failed to create user account', { 
+                            logAuthenticationEvent(SECURITY_EVENTS.REGISTRATION_FAILURE, req, false, { 
                                 username, 
-                                error: err.message, 
-                                ip: req.ip 
+                                error: err.message 
                             });
                             req.session.validationErrors = [{ msg: 'Registration failed. Please try again.' }];
                             return res.redirect('/register');
                         }
 
-                        securityLogger.info('New user account created', { 
+                        logAuthenticationEvent(SECURITY_EVENTS.REGISTRATION_SUCCESS, req, true, { 
                             username, 
-                            role: 'Employee', 
-                            ip: req.ip,
-                            userAgent: req.get('User-Agent')
+                            role: 'Employee'
                         });
 
                         req.session.successMessage = 'Registration successful! Please log in.';
@@ -102,7 +106,7 @@ router.post('/register',
             req.session.validationErrors = [{ msg: 'Registration failed. Please try again.' }];
             res.redirect('/register');
         }
-    }
+    })
 );
 
 // Login page
@@ -122,7 +126,7 @@ router.post('/login',
     redirectIfAuthenticated,
     validationSets.login,
     handleValidationErrors,
-    (req, res) => {
+    asyncErrorHandler(async (req, res) => {
         const { username, password } = req.body;
 
         dbHelpers.getUserByUsername(username, async (err, user) => {
@@ -140,10 +144,9 @@ router.post('/login',
             const genericError = 'Invalid username or password';
 
             if (!user) {
-                securityLogger.warn('Login attempt with non-existent username', { 
+                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_FAILURE, req, false, { 
                     username, 
-                    ip: req.ip,
-                    userAgent: req.get('User-Agent')
+                    reason: 'non_existent_username'
                 });
                 req.session.validationErrors = [{ msg: genericError }];
                 return res.redirect('/login');
@@ -151,10 +154,9 @@ router.post('/login',
 
             // Check if account is locked
             if (user.locked_until && new Date() < new Date(user.locked_until)) {
-                securityLogger.warn('Login attempt on locked account', { 
+                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_LOCKED_ACCOUNT, req, false, { 
                     username, 
-                    ip: req.ip,
-                    userAgent: req.get('User-Agent')
+                    lockedUntil: user.locked_until
                 });
                 req.session.validationErrors = [{ msg: 'Account is temporarily locked due to multiple failed attempts. Please try again later.' }];
                 return res.redirect('/login');
@@ -183,11 +185,10 @@ router.post('/login',
                         }
                     });
 
-                    securityLogger.warn('Failed login attempt', { 
+                    logAuthenticationEvent(SECURITY_EVENTS.LOGIN_FAILURE, req, false, { 
                         username, 
                         failedAttempts: newFailedAttempts,
-                        ip: req.ip,
-                        userAgent: req.get('User-Agent')
+                        reason: 'invalid_password'
                     });
 
                     req.session.validationErrors = [{ msg: genericError }];
@@ -213,11 +214,9 @@ router.post('/login',
                     role: user.role
                 };
 
-                securityLogger.info('Successful login', { 
+                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_SUCCESS, req, true, { 
                     username, 
-                    role: user.role, 
-                    ip: req.ip,
-                    userAgent: req.get('User-Agent')
+                    role: user.role
                 });
 
                 res.redirect('/dashboard');
@@ -232,7 +231,7 @@ router.post('/login',
                 res.redirect('/login');
             }
         });
-    }
+    })
 );
 
 module.exports = router;

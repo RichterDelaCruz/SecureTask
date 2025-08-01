@@ -274,11 +274,16 @@ router.post('/delete-manager',
     }
 );
 
-// System logs viewer page
+// System logs viewer page with performance metrics
 router.get('/logs', 
     requirePermission('admin:view-logs'),
     (req, res) => {
         const user = req.session.user;
+        
+        // Get logging performance metrics
+        const { securityLogger } = require('../utils/logger');
+        const logMetrics = securityLogger.getMetrics();
+        const queueStatus = securityLogger.getQueueStatus();
         
         // Get system logs
         dbHelpers.getLogs((err, logs) => {
@@ -301,6 +306,12 @@ router.get('/logs',
                 }
                 return log;
             });
+            
+            // Group logs by level for summary
+            const logSummary = logs.reduce((acc, log) => {
+                acc[log.level] = (acc[log.level] || 0) + 1;
+                return acc;
+            }, {});
 
             securityLogger.info('System logs accessed', {
                 username: user.username,
@@ -312,7 +323,10 @@ router.get('/logs',
             res.render('admin/logs', {
                 title: 'System Logs - SecureTask',
                 user: user,
-                logs: parsedLogs
+                logs: parsedLogs,
+                logMetrics: logMetrics,
+                queueStatus: queueStatus,
+                logSummary: logSummary
             });
         });
     }

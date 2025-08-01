@@ -5,6 +5,7 @@ const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
 const { requirePermission } = require('../middleware/authorization');
 const { sensitiveOperationLimiter } = require('../middleware/authz-audit');
+const { asyncErrorHandler } = require('../middleware/error-handler');
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ router.post('/change-password',
     sensitiveOperationLimiter('password-change', 5, 30 * 60 * 1000), // 5 attempts per 30 minutes
     validationSets.changePassword,
     handleValidationErrors,
-    async (req, res) => {
+    asyncErrorHandler(async (req, res) => {
         try {
             const { currentPassword, password } = req.body;
             const user = req.session.user;
@@ -124,7 +125,7 @@ router.post('/change-password',
             req.session.validationErrors = [{ msg: 'Password change failed. Please try again.' }];
             res.redirect('/account/change-password');
         }
-    }
+    })
 );
 
 module.exports = router;

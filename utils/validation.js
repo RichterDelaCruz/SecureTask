@@ -601,7 +601,8 @@ const handleValidationErrors = (req, res, next) => {
         });
         
         // Enhanced security logging
-        console.warn('Validation failed:', {
+        const { securityLogger } = require('./logger');
+        securityLogger.warn('Validation failed', {
             url: req.url,
             method: req.method,
             ip: req.ip,
@@ -620,7 +621,7 @@ const handleValidationErrors = (req, res, next) => {
         
         // If security-related errors, log with higher severity
         if (errorCategories.security.length > 0) {
-            console.error('SECURITY ALERT - Potentially malicious input detected:', {
+            securityLogger.error('SECURITY ALERT - Potentially malicious input detected', {
                 url: req.url,
                 ip: req.ip,
                 userAgent: req.get('User-Agent'),
@@ -702,7 +703,8 @@ const validateRequest = (options = {}) => {
             
             next();
         } catch (error) {
-            console.warn('Request validation failed:', {
+            const { securityLogger } = require('./logger');
+            securityLogger.warn('Request validation failed', {
                 url: req.url,
                 method: req.method,
                 ip: req.ip,

@@ -87,7 +87,7 @@ const requirePermission = (permission) => {
                 userAgent: req.get('User-Agent')
             });
             
-            return res.status(403).render('error', {
+            return res.status(403).render('errors/403', {
                 message: 'Access denied. You do not have permission to perform this action.',
                 user: user
             });
@@ -131,7 +131,7 @@ const requireResourceOwnership = (resourceType, getResourceOwner) => {
                     userAgent: req.get('User-Agent')
                 });
                 
-                return res.status(403).render('error', {
+                return res.status(403).render('errors/403', {
                     message: 'Access denied. You can only access your own resources.',
                     user: user
                 });
@@ -145,14 +145,15 @@ const requireResourceOwnership = (resourceType, getResourceOwner) => {
                 error: error.message,
                 url: req.url,
                 method: req.method,
-                ip: req.ip
+                ip: req.ip,
+                userAgent: req.get('User-Agent'),
+                timestamp: new Date().toISOString()
             });
             
-            // Fail securely
-            return res.status(403).render('error', {
-                message: 'Access denied. Unable to verify resource ownership.',
-                user: user
-            });
+            // Fail securely - create proper error and pass to error handler
+            const accessError = new Error('Access denied. Unable to verify resource ownership.');
+            accessError.status = 403;
+            return next(accessError);
         }
     };
 };
