@@ -43,10 +43,14 @@ const limiter = rateLimit({
 
 const loginLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // limit each IP to 5 login requests per windowMs
+    max: 20, // limit each IP to 20 login requests per windowMs
     message: 'Too many login attempts, please try again later.',
     standardHeaders: true,
     legacyHeaders: false,
+    skip: (req) => {
+        // Skip rate limiting for GET requests (viewing login page)
+        return req.method === 'GET';
+    }
 });
 
 app.use(limiter);
