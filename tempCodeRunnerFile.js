@@ -1,0 +1,196 @@
+
+const helmet = require('helmet');
+const csurf = require('csurf');
+
+const express = require('express');
+const session = require('express-session');
+const path = require('path');
+const rateLimit = require('express-rate-limit');
+const bcrypt = require('bcrypt');
+const sqlite3 = require('sqlite3').verbose();
+const winston = require('winston');
+
+// Import route handlers
+const authRoutes = require('./routes/auth');
+const dashboardRoutes = require('./routes/dashboard');
+const adminRoutes = require('./routes/admin');
+const accountRoutes = require('./routes/account');
+const resetRoutes = require('./routes/reset');
+const checkSessionTimeout = require('./middleware/sessionTimeout');
+const noCache = require('./middleware/noCache');
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Import middleware
+const { authenticateUser, authorizeRole } = require('./middleware/auth');
+const { securityLogger, setDbHelpers } = require('./utils/logger');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https:"],
+            scriptSrc: ["'self'", "https:"],
+            imgSrc: ["'self'", "data:", "https:"],
+            objectSrc: ["'none'"],
+            upgradeInsecureRequests: [],
+        }
+    },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    frameguard: { action: "deny" },
+    hsts: {
+        maxAge: 63072000, // 2 years
+        includeSubDomains: true,
+        preload: true
+    },
+    xssFilter: true,
+    noSniff: true,
+    dnsPrefetchControl: { allow: false }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Too many requests from this IP, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit each IP to 5 login requests per windowMs
+    message: 'Too many login attempts, please try again later.',
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.use(limiter);
+app.use('/login', loginLimiter);
+app.use('/', resetRoutes);
+
+// View engine setup
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+// Body parsing middleware
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// Static files
+app.use('/public', noCache, express.static(path.join(__dirname, 'public')));
+
+// Session configuration
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-super-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: isProduction,            // Only send cookie over HTTPS in production
+    sameSite: 'lax',                 // Helps mitigate CSRF
+    maxAge: 1000 * 60 * 60 * 24      // 24 hours
+  }
+}));
+
+
+// 👇 Add session timeout middleware right after session
+app.use(checkSessionTimeout);
+app.use(noCache); // this applies to all routes
+
+// CSRF protection
+app.use(csurf());
+
+// Make CSRF token available in all views
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+
+
+// Initialize database
+const { db, dbHelpers } = require('./database/init');
+
+// Set database helpers for logger
+setDbHelpers(dbHelpers);
+
+// Routes
+app.use('/', authRoutes);
+app.use('/dashboard', authenticateUser, noCache, dashboardRoutes);
+app.use('/admin', authenticateUser, authorizeRole(['Administrator']), noCache, adminRoutes);
+app.use('/account', authenticateUser, noCache, accountRoutes);
+
+// Logout route
+app.post('/logout', authenticateUser, (req, res) => {
+    const username = req.session.user?.username;
+    securityLogger.info(`User logout`, { username, ip: req.ip });
+    
+    req.session.destroy((err) => {
+        if (err) {
+            securityLogger.error('Session destruction failed', { username, error: err.message });
+            return res.status(500).render('error', { 
+                message: 'Logout failed', 
+                user: req.session.user 
+            });
+        }
+        res.redirect('/login');
+    });
+});
+
+// Error handling middleware
+app.use((req, res, next) => {
+    securityLogger.warn('404 Not Found', { 
+        url: req.url, 
+        method: req.method, 
+        ip: req.ip,
+        userAgent: req.get('User-Agent')
+    });
+    res.status(404).render('error', { 
+        message: 'Page not found', 
+        user: req.session.user 
+    });
+});
+
+
+
+app.use((err, req, res, next) => {
+    if (err.code === 'EBADCSRFTOKEN') {
+        securityLogger.warn('Invalid CSRF token', {
+            url: req.url,
+            ip: req.ip,
+            user: req.session.user?.username || 'unknown'
+        });
+
+        req.session.destroy(() => {
+            res.status(403).render('error', {
+                message: 'Invalid or expired form submission. Please log in again.',
+                user: null
+            });
+        });
+    } else {
+        securityLogger.error('Application error', {
+            error: err.message,
+            stack: err.stack,
+            url: req.url,
+            method: req.method,
+            ip: req.ip,
+            user: req.session.user?.username
+        });
+
+        res.status(500).render('error', {
+            message: 'Internal server error',
+            user: req.session.user
+        });
+    }
+});
+
+
+app.listen(PORT, () => {
+    console.log(`SecureTask server running on port ${PORT}`);
+    securityLogger.info('Server started', { port: PORT });
+});
+
+module.exports = app;
