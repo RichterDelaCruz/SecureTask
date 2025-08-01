@@ -1,8 +1,10 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const { validationResult } = require('express-validator');
 const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
+const { privateCache, strictNoCache } = require('../utils/cache-control');
 
 const router = express.Router();
 
@@ -10,9 +12,9 @@ const router = express.Router();
 router.use(injectValidationData);
 
 // Manager accounts management page
-router.get('/managers', (req, res) => {
+router.get('/managers', privateCache, (req, res) => {
     const user = req.session.user;
-    
+
     // Get all Project Manager accounts
     dbHelpers.getManagers((err, managers) => {
         if (err) {
@@ -24,25 +26,75 @@ router.get('/managers', (req, res) => {
         }
 
         const successMessage = req.session.successMessage;
+        const validationErrors = req.session.validationErrors;
+        const formData = req.session.formData;
+
+        // Clear session messages
         delete req.session.successMessage;
+        delete req.session.validationErrors;
+        delete req.session.formData;
 
         res.render('admin/managers', {
             title: 'Manage Project Managers - SecureTask',
             user: user,
             managers: managers,
-            successMessage
+            successMessage,
+            validationErrors: validationErrors || [],
+            formData: formData || {}
         });
     });
 });
 
 // Create new Project Manager account
 router.post('/create-manager',
+    strictNoCache,
     validationSets.createManager,
-    handleValidationErrors,
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            // Store errors and form data in session
+            req.session.validationErrors = errors.array();
+            req.session.formData = {
+                username: req.body.username || ''
+            };
+
+            securityLogger.warn('Manager creation validation failed', {
+                username: req.session.user?.username,
+                errors: errors.array().map(e => e.msg),
+                attemptedUsername: req.body.username
+            });
+
+            return res.redirect('/admin/managers');
+        }
+        next();
+    },
     async (req, res) => {
         try {
             const { username, password } = req.body;
             const user = req.session.user;
+
+            // Additional server-side validation
+            if (!username || username.length < 3 || username.length > 30) {
+                req.session.validationErrors = [{ msg: 'Username must be between 3 and 30 characters' }];
+                req.session.formData = { username: username || '' };
+                return res.redirect('/admin/managers');
+            }
+
+            if (!password || password.length < 8) {
+                req.session.validationErrors = [{ msg: 'Password must be at least 8 characters long' }];
+                req.session.formData = { username: username || '' };
+                return res.redirect('/admin/managers');
+            }
+
+            // Check password complexity
+            const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/;
+            if (!passwordRegex.test(password)) {
+                req.session.validationErrors = [{
+                    msg: 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'
+                }];
+                req.session.formData = { username: username || '' };
+                return res.redirect('/admin/managers');
+            }
 
             // Check if username already exists
             dbHelpers.getUserByUsername(username, async (err, existingUser) => {
@@ -53,6 +105,7 @@ router.post('/create-manager',
                         newManagerUsername: username
                     });
                     req.session.validationErrors = [{ msg: 'Failed to create manager account. Please try again.' }];
+                    req.session.formData = { username: username || '' };
                     return res.redirect('/admin/managers');
                 }
 
@@ -61,7 +114,8 @@ router.post('/create-manager',
                         username: user.username,
                         newManagerUsername: username
                     });
-                    req.session.validationErrors = [{ msg: 'Username already exists' }];
+                    req.session.validationErrors = [{ msg: 'Username already exists. Please choose a different username.' }];
+                    req.session.formData = { username: username || '' };
                     return res.redirect('/admin/managers');
                 }
 
@@ -71,7 +125,7 @@ router.post('/create-manager',
                     const passwordHash = await bcrypt.hash(password, saltRounds);
 
                     // Create new Project Manager user
-                    dbHelpers.createUser(username, passwordHash, 'Project Manager', function(err) {
+                    dbHelpers.createUser(username, passwordHash, 'Project Manager', function (err) {
                         if (err) {
                             securityLogger.error('Failed to create manager account', {
                                 username: user.username,
@@ -79,6 +133,7 @@ router.post('/create-manager',
                                 newManagerUsername: username
                             });
                             req.session.validationErrors = [{ msg: 'Failed to create manager account. Please try again.' }];
+                            req.session.formData = { username: username || '' };
                             return res.redirect('/admin/managers');
                         }
 
@@ -98,6 +153,7 @@ router.post('/create-manager',
                         newManagerUsername: username
                     });
                     req.session.validationErrors = [{ msg: 'Failed to create manager account. Please try again.' }];
+                    req.session.formData = { username: username || '' };
                     res.redirect('/admin/managers');
                 }
             });
@@ -107,13 +163,14 @@ router.post('/create-manager',
                 error: error.message
             });
             req.session.validationErrors = [{ msg: 'Failed to create manager account. Please try again.' }];
+            req.session.formData = { username: req.body.username || '' };
             res.redirect('/admin/managers');
         }
     }
 );
 
 // Delete Project Manager account
-router.post('/delete-manager', (req, res) => {
+router.post('/delete-manager', strictNoCache, (req, res) => {
     const { managerId } = req.body;
     const user = req.session.user;
 
@@ -160,7 +217,7 @@ router.post('/delete-manager', (req, res) => {
         }
 
         // Delete the manager account
-        dbHelpers.deleteUser(managerId, function(err) {
+        dbHelpers.deleteUser(managerId, function (err) {
             if (err) {
                 securityLogger.error('Failed to delete manager account', {
                     username: user.username,
@@ -197,7 +254,7 @@ router.post('/delete-manager', (req, res) => {
 // System logs viewer page
 router.get('/logs', (req, res) => {
     const user = req.session.user;
-    
+
     // Get system logs
     dbHelpers.getLogs((err, logs) => {
         if (err) {

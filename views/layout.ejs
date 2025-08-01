@@ -1,47 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title><%= title %></title>
+    <title>
+        <%= title %>
+    </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         .navbar-brand {
             font-weight: bold;
         }
+
         .card {
             box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             border: 1px solid rgba(0, 0, 0, 0.125);
         }
+
         .alert {
             border: none;
             border-radius: 0.375rem;
         }
+
         .btn {
             border-radius: 0.375rem;
         }
+
         .form-control {
             border-radius: 0.375rem;
         }
+
         .table {
             border-radius: 0.375rem;
             overflow: hidden;
         }
+
         footer {
             margin-top: auto;
         }
+
         body {
             display: flex;
             flex-direction: column;
             min-height: 100vh;
         }
+
         main {
             flex: 1;
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
@@ -49,12 +61,12 @@
             <a class="navbar-brand" href="/">
                 <i class="fas fa-shield-alt me-2"></i>SecureTask
             </a>
-            
+
             <% if (user) { %>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                
+
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item">
@@ -62,36 +74,51 @@
                                 <i class="fas fa-tachometer-alt me-1"></i>Dashboard
                             </a>
                         </li>
-                        
-                        <% if (user.role === 'Administrator') { %>
+
+                        <% if (user.role==='Administrator' ) { %>
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+                                    data-bs-toggle="dropdown">
                                     <i class="fas fa-cog me-1"></i>Admin
                                 </a>
                                 <ul class="dropdown-menu">
                                     <li><a class="dropdown-item" href="/admin/managers">
-                                        <i class="fas fa-users me-1"></i>Manage Managers
-                                    </a></li>
+                                            <i class="fas fa-users me-1"></i>Manage Managers
+                                        </a></li>
                                     <li><a class="dropdown-item" href="/admin/logs">
-                                        <i class="fas fa-file-alt me-1"></i>System Logs
-                                    </a></li>
+                                            <i class="fas fa-file-alt me-1"></i>System Logs
+                                        </a></li>
                                 </ul>
                             </li>
-                        <% } %>
+                            <% } %>
                     </ul>
-                    
+
                     <ul class="navbar-nav">
+                        <!-- Session timeout indicator (only show when logged in) -->
+                        <li class="nav-item d-flex align-items-center me-3">
+                            <small class="text-light" id="session-timer" style="font-size: 0.8rem;">
+                                <i class="fas fa-clock me-1"></i>
+                                <span id="time-remaining">30:00</span>
+                            </small>
+                        </li>
+
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-user me-1"></i><%= user.username %> (<%= user.role %>)
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-bs-toggle="dropdown">
+                                <i class="fas fa-user me-1"></i>
+                                <%= user.username %> (<%= user.role %>)
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><a class="dropdown-item" href="/account/change-password">
-                                    <i class="fas fa-key me-1"></i>Change Password
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                        <i class="fas fa-key me-1"></i>Change Password
+                                    </a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li>
                                     <form method="POST" action="/logout" class="d-inline">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                         <button type="submit" class="dropdown-item">
                                             <i class="fas fa-sign-out-alt me-1"></i>Logout
                                         </button>
@@ -101,33 +128,36 @@
                         </li>
                     </ul>
                 </div>
-            <% } %>
+                <% } %>
         </div>
     </nav>
 
     <!-- Main Content -->
     <main class="container mt-4">
         <!-- Flash Messages -->
-        <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
+        <% if (typeof validationErrors !=='undefined' && validationErrors.length> 0) { %>
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
                 <strong>Error:</strong>
                 <ul class="mb-0">
-                    <% validationErrors.forEach(error => { %>
-                        <li><%= error.msg %></li>
-                    <% }) %>
+                    <% validationErrors.forEach(error=> { %>
+                        <li>
+                            <%= error.msg %>
+                        </li>
+                        <% }) %>
                 </ul>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
-        <% } %>
+            <% } %>
 
-        <% if (typeof successMessage !== 'undefined' && successMessage) { %>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <strong>Success:</strong> <%= successMessage %>
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        <% } %>
+                <% if (typeof successMessage !=='undefined' && successMessage) { %>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>Success:</strong>
+                        <%= successMessage %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    <% } %>
 
-        <%- body %>
+                        <%- body %>
     </main>
 
     <!-- Footer -->
@@ -142,25 +172,90 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // Auto-dismiss alerts after 5 seconds
-        setTimeout(function() {
+        setTimeout(function () {
             var alerts = document.querySelectorAll('.alert-dismissible');
-            alerts.forEach(function(alert) {
+            alerts.forEach(function (alert) {
                 var bsAlert = new bootstrap.Alert(alert);
                 bsAlert.close();
             });
         }, 5000);
 
         // Confirm delete actions
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             var deleteButtons = document.querySelectorAll('[data-confirm-delete]');
-            deleteButtons.forEach(function(button) {
-                button.addEventListener('click', function(e) {
+            deleteButtons.forEach(function (button) {
+                button.addEventListener('click', function (e) {
                     if (!confirm('Are you sure you want to delete this item? This action cannot be undone.')) {
                         e.preventDefault();
                     }
                 });
             });
         });
+
+        <% if (user) { %>
+            // Session timeout warning system
+            let sessionTimeoutMinutes = 30; // 30 minutes
+            let lastActivity = Date.now();
+            let warningShown = false;
+
+            function updateSessionTimer() {
+                const now = Date.now();
+                const timeSinceActivity = now - lastActivity;
+                const timeRemaining = (sessionTimeoutMinutes * 60 * 1000) - timeSinceActivity;
+
+                if (timeRemaining <= 0) {
+                    // Session has expired, redirect to login
+                    window.location.href = '/login?error=timeout';
+                    return;
+                }
+
+                const minutes = Math.floor(timeRemaining / 60000);
+                const seconds = Math.floor((timeRemaining % 60000) / 1000);
+                const display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                const timerElement = document.getElementById('time-remaining');
+                if (timerElement) {
+                    timerElement.textContent = display;
+
+                    // Change color when less than 5 minutes remaining
+                    const sessionTimer = document.getElementById('session-timer');
+                    if (timeRemaining <= 5 * 60 * 1000) {
+                        sessionTimer.className = 'text-warning';
+
+                        // Show warning when 2 minutes remaining (only once)
+                        if (timeRemaining <= 2 * 60 * 1000 && !warningShown) {
+                            warningShown = true;
+                            if (confirm('Your session will expire in 2 minutes due to inactivity. Click OK to continue your session.')) {
+                                // Reset activity time to extend session
+                                fetch(window.location.href, { method: 'HEAD' })
+                                    .then(() => {
+                                        lastActivity = Date.now();
+                                        warningShown = false;
+                                    });
+                            }
+                        }
+                    } else {
+                        sessionTimer.className = 'text-light';
+                    }
+                }
+            }
+
+            // Reset activity timer on user actions
+            function resetActivity() {
+                lastActivity = Date.now();
+                warningShown = false;
+            }
+
+            // Track user activity
+            document.addEventListener('mousedown', resetActivity);
+            document.addEventListener('keydown', resetActivity);
+            document.addEventListener('scroll', resetActivity);
+            document.addEventListener('touchstart', resetActivity);
+
+            // Update timer every second
+            setInterval(updateSessionTimer, 1000);
+        <% } %>
     </script>
 </body>
+
 </html>

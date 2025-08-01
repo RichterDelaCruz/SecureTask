@@ -1,9 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
+    <title>
+        <%= title %>
+    </title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -195,7 +198,7 @@
             color: var(--muted-foreground);
         }
 
-        .breadcrumb-item + .breadcrumb-item::before {
+        .breadcrumb-item+.breadcrumb-item::before {
             content: ">";
             padding: 0 0.5rem;
             color: var(--muted-foreground);
@@ -404,11 +407,11 @@
             .container {
                 padding: 1rem;
             }
-            
+
             .table {
                 font-size: 0.75rem;
             }
-            
+
             .table th,
             .table td {
                 padding: 0.5rem;
@@ -416,6 +419,7 @@
         }
     </style>
 </head>
+
 <body>
     <!-- Navigation -->
     <nav class="nav-bar">
@@ -430,8 +434,11 @@
                 </div>
             </div>
             <div class="nav-right">
-                <span class="nav-user"><%= user.username %> (Administrator)</span>
+                <span class="nav-user">
+                    <%= user.username %> (Administrator)
+                </span>
                 <form method="POST" action="/logout" style="margin: 0;">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <button type="submit" class="nav-button">Logout</button>
                 </form>
             </div>
@@ -451,13 +458,16 @@
         <!-- Info Banner -->
         <div class="alert alert-info">
             <i class="fas fa-info-circle me-2"></i>
-            Showing the most recent <strong><%= logs.length %></strong> security events (maximum 1000 entries).
+            Showing the most recent <strong>
+                <%= logs.length %>
+            </strong> security events (maximum 1000 entries).
             Logs are automatically created for authentication, authorization, and security-sensitive operations.
         </div>
 
         <!-- Logs Card -->
         <div class="card">
-            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem;">
+            <div class="card-header"
+                style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem;">
                 <div>
                     <h2 class="card-title">Security Audit Log</h2>
                     <p class="card-description" style="margin: 0;">
@@ -469,79 +479,87 @@
                 </button>
             </div>
             <div class="card-content" style="padding: 0;">
-                <% if (logs.length === 0) { %>
+                <% if (logs.length===0) { %>
                     <div class="empty-state">
                         <i class="fas fa-file-alt"></i>
                         <p>No system logs available yet.</p>
                         <p style="font-size: 0.875rem;">Security events will appear here as they occur.</p>
                     </div>
-                <% } else { %>
-                    <div style="padding: 1.5rem 1.5rem 0 1.5rem;">
-                        <div class="log-stats">
-                            <span class="log-stat">Total Entries: <strong><%= logs.length %></strong></span>
-                            <span class="log-stat">INFO: <strong><%= logs.filter(l => l.level === 'INFO').length %></strong></span>
-                            <span class="log-stat">WARN: <strong><%= logs.filter(l => l.level === 'WARN').length %></strong></span>
-                            <span class="log-stat">ERROR: <strong><%= logs.filter(l => l.level === 'ERROR').length %></strong></span>
+                    <% } else { %>
+                        <div style="padding: 1.5rem 1.5rem 0 1.5rem;">
+                            <div class="log-stats">
+                                <span class="log-stat">Total Entries: <strong>
+                                        <%= logs.length %>
+                                    </strong></span>
+                                <span class="log-stat">INFO: <strong>
+                                        <%= logs.filter(l=> l.level === 'INFO').length %>
+                                    </strong></span>
+                                <span class="log-stat">WARN: <strong>
+                                        <%= logs.filter(l=> l.level === 'WARN').length %>
+                                    </strong></span>
+                                <span class="log-stat">ERROR: <strong>
+                                        <%= logs.filter(l=> l.level === 'ERROR').length %>
+                                    </strong></span>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div class="table-container" style="border: none; border-radius: 0;">
-                        <table class="table">
-                            <thead>
-                                <tr>
-                                    <th style="width: 180px;">Timestamp</th>
-                                    <th style="width: 100px;">Level</th>
-                                    <th style="width: 120px;">User</th>
-                                    <th>Event Message</th>
-                                    <th style="width: 100px;">IP Address</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <% logs.forEach(log => { %>
+
+                        <div class="table-container" style="border: none; border-radius: 0;">
+                            <table class="table">
+                                <thead>
                                     <tr>
-                                        <td>
-                                            <span style="font-family: 'Courier New', monospace; font-size: 0.75rem; color: var(--muted-foreground);">
-                                                <%= new Date(log.timestamp).toLocaleString('en-US', {
-                                                    year: 'numeric',
-                                                    month: '2-digit',
-                                                    day: '2-digit',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit',
-                                                    second: '2-digit',
-                                                    hour12: false
-                                                }) %>
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <% if (log.level === 'ERROR') { %>
-                                                <span class="badge badge-danger">ERROR</span>
-                                            <% } else if (log.level === 'WARN') { %>
-                                                <span class="badge badge-warning">WARN</span>
-                                            <% } else { %>
-                                                <span class="badge badge-info">INFO</span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <% if (log.username) { %>
-                                                <span class="badge badge-secondary"><%= log.username %></span>
-                                            <% } else { %>
-                                                <span style="color: var(--muted-foreground); font-size: 0.875rem;">System</span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <%= log.message %>
-                                        </td>
-                                        <td>
-                                            <span style="color: var(--muted-foreground); font-size: 0.75rem; font-family: 'Courier New', monospace;">
-                                                <%= log.ip_address || 'N/A' %>
-                                            </span>
-                                        </td>
+                                        <th style="width: 180px;">Timestamp</th>
+                                        <th style="width: 100px;">Level</th>
+                                        <th style="width: 120px;">User</th>
+                                        <th>Event Message</th>
+                                        <th style="width: 100px;">IP Address</th>
                                     </tr>
-                                <% }) %>
-                            </tbody>
-                        </table>
-                    </div>
-                <% } %>
+                                </thead>
+                                <tbody>
+                                    <% logs.forEach(log=> { %>
+                                        <tr>
+                                            <td>
+                                                <span
+                                                    style="font-family: 'Courier New', monospace; font-size: 0.75rem; color: var(--muted-foreground);">
+                                                    <%= new Date(log.timestamp).toLocaleString('en-US', {
+                                                        year: 'numeric' , month: '2-digit' , day: '2-digit' ,
+                                                        hour: '2-digit' , minute: '2-digit' , second: '2-digit' ,
+                                                        hour12: false }) %>
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <% if (log.level==='ERROR' ) { %>
+                                                    <span class="badge badge-danger">ERROR</span>
+                                                    <% } else if (log.level==='WARN' ) { %>
+                                                        <span class="badge badge-warning">WARN</span>
+                                                        <% } else { %>
+                                                            <span class="badge badge-info">INFO</span>
+                                                            <% } %>
+                                            </td>
+                                            <td>
+                                                <% if (log.username) { %>
+                                                    <span class="badge badge-secondary">
+                                                        <%= log.username %>
+                                                    </span>
+                                                    <% } else { %>
+                                                        <span
+                                                            style="color: var(--muted-foreground); font-size: 0.875rem;">System</span>
+                                                        <% } %>
+                                            </td>
+                                            <td>
+                                                <%= log.message %>
+                                            </td>
+                                            <td>
+                                                <span
+                                                    style="color: var(--muted-foreground); font-size: 0.75rem; font-family: 'Courier New', monospace;">
+                                                    <%= log.ip_address || 'N/A' %>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <% }) %>
+                                </tbody>
+                            </table>
+                        </div>
+                        <% } %>
             </div>
         </div>
 
@@ -557,11 +575,13 @@
                 <div class="legends">
                     <div class="legend-item">
                         <span class="badge badge-info">INFO</span>
-                        <span style="font-size: 0.875rem;">Normal security events (successful logins, account creation, etc.)</span>
+                        <span style="font-size: 0.875rem;">Normal security events (successful logins, account creation,
+                            etc.)</span>
                     </div>
                     <div class="legend-item">
                         <span class="badge badge-warning">WARN</span>
-                        <span style="font-size: 0.875rem;">Potential security concerns (failed logins, access denials, etc.)</span>
+                        <span style="font-size: 0.875rem;">Potential security concerns (failed logins, access denials,
+                            etc.)</span>
                     </div>
                     <div class="legend-item">
                         <span class="badge badge-danger">ERROR</span>
@@ -574,4 +594,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

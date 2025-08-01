@@ -3,6 +3,7 @@ const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
 const { authorizeRole } = require('../middleware/auth');
+const { privateCache, strictNoCache } = require('../utils/cache-control');
 
 const router = express.Router();
 
@@ -10,9 +11,9 @@ const router = express.Router();
 router.use(injectValidationData);
 
 // Main dashboard route
-router.get('/', (req, res) => {
+router.get('/', privateCache, (req, res) => {
     const user = req.session.user;
-    
+
     switch (user.role) {
         case 'Administrator':
             // Get system statistics for admin dashboard
@@ -66,7 +67,7 @@ router.get('/', (req, res) => {
                 });
             });
             break;
-            
+
         case 'Project Manager':
             // Get employees for task assignment dropdown
             dbHelpers.getEmployees((err, employees) => {
@@ -88,16 +89,28 @@ router.get('/', (req, res) => {
                         tasks = [];
                     }
 
+                    const successMessage = req.session.successMessage;
+                    const validationErrors = req.session.validationErrors;
+                    const formData = req.session.formData;
+
+                    // Clear session messages
+                    delete req.session.successMessage;
+                    delete req.session.validationErrors;
+                    delete req.session.formData;
+
                     res.render('dashboard/manager', {
                         title: 'Project Manager Dashboard - SecureTask',
                         user: user,
                         employees: employees,
-                        tasks: tasks
+                        tasks: tasks,
+                        successMessage,
+                        validationErrors: validationErrors || [],
+                        formData: formData || {}
                     });
                 });
             });
             break;
-            
+
         case 'Employee':
             // Get tasks assigned to this employee
             dbHelpers.getTasksByAssignee(user.id, (err, tasks) => {
@@ -116,7 +129,7 @@ router.get('/', (req, res) => {
                 });
             });
             break;
-            
+
         default:
             securityLogger.error('Unknown user role accessing dashboard', {
                 username: user.username,
@@ -147,6 +160,7 @@ router.post('/create-task',
                     assignedTo
                 });
                 req.session.validationErrors = [{ msg: 'Failed to create task. Please try again.' }];
+                req.session.formData = { title, description, assignedTo, priority };
                 return res.redirect('/dashboard');
             }
 
@@ -157,11 +171,12 @@ router.post('/create-task',
                     assignedUserRole: assignedUser?.role
                 });
                 req.session.validationErrors = [{ msg: 'Please select a valid employee.' }];
+                req.session.formData = { title, description, assignedTo, priority };
                 return res.redirect('/dashboard');
             }
 
             // Create the task
-            dbHelpers.createTask(title, description, priority, user.id, assignedTo, function(err) {
+            dbHelpers.createTask(title, description, priority, user.id, assignedTo, function (err) {
                 if (err) {
                     securityLogger.error('Failed to create task', {
                         username: user.username,
@@ -169,6 +184,7 @@ router.post('/create-task',
                         taskTitle: title
                     });
                     req.session.validationErrors = [{ msg: 'Failed to create task. Please try again.' }];
+                    req.session.formData = { title, description, assignedTo, priority };
                     return res.redirect('/dashboard');
                 }
 
@@ -205,7 +221,7 @@ router.post('/update-task-status',
         }
 
         // Update task status (only if it's assigned to this user)
-        dbHelpers.updateTaskStatus(taskId, status, user.id, function(err) {
+        dbHelpers.updateTaskStatus(taskId, status, user.id, function (err) {
             if (err) {
                 securityLogger.error('Failed to update task status', {
                     username: user.username,
@@ -278,7 +294,7 @@ router.post('/reassign-task',
             }
 
             // Reassign the task (only if it was created by this user)
-            dbHelpers.reassignTask(taskId, newAssignedTo, user.id, function(err) {
+            dbHelpers.reassignTask(taskId, newAssignedTo, user.id, function (err) {
                 if (err) {
                     securityLogger.error('Failed to reassign task', {
                         username: user.username,
@@ -330,7 +346,7 @@ router.post('/delete-task',
         }
 
         // Delete task (only if it was created by this user)
-        dbHelpers.deleteTask(taskId, user.id, function(err) {
+        dbHelpers.deleteTask(taskId, user.id, function (err) {
             if (err) {
                 securityLogger.error('Failed to delete task', {
                     username: user.username,

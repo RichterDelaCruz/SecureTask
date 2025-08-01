@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
+const { privateCache, strictNoCache } = require('../utils/cache-control');
 
 const router = express.Router();
 
@@ -10,7 +11,7 @@ const router = express.Router();
 router.use(injectValidationData);
 
 // Change password page
-router.get('/change-password', (req, res) => {
+router.get('/change-password', privateCache, (req, res) => {
     const user = req.session.user;
     const successMessage = req.session.successMessage;
     delete req.session.successMessage;
@@ -24,6 +25,7 @@ router.get('/change-password', (req, res) => {
 
 // Change password form handler
 router.post('/change-password',
+    strictNoCache,
     validationSets.changePassword,
     handleValidationErrors,
     async (req, res) => {
@@ -80,7 +82,7 @@ router.post('/change-password',
                     const newPasswordHash = await bcrypt.hash(password, saltRounds);
 
                     // Update password in database
-                    dbHelpers.updateUserPassword(user.id, newPasswordHash, function(err) {
+                    dbHelpers.updateUserPassword(user.id, newPasswordHash, function (err) {
                         if (err) {
                             securityLogger.error('Failed to update password in database', {
                                 username: user.username,
