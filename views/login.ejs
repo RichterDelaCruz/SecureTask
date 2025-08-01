@@ -4,59 +4,238 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #0a0a0a;
+            --card: #ffffff;
+            --card-foreground: #0a0a0a;
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --secondary: #f1f1f3;
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --accent-foreground: #030213;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input-background: #f3f3f5;
+            --radius: 0.625rem;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--background);
+            color: var(--foreground);
             min-height: 100vh;
             display: flex;
             align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 1rem;
         }
+
+        .auth-container {
+            width: 100%;
+            max-width: 28rem;
+        }
+
         .auth-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0 1.5rem;
             border: none;
+            background: transparent;
         }
-        .auth-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px 15px 0 0;
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+            margin: 0;
+            color: var(--card-foreground);
         }
+
+        .card-description {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            margin: 0.375rem 0 0 0;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--card-foreground);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--input-background);
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(3, 2, 19, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--muted-foreground);
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            min-height: 2.5rem;
+            padding: 0.5rem 1rem;
+        }
+
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            width: 100%;
         }
+
         .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            background: rgba(3, 2, 19, 0.9);
+            color: var(--primary-foreground);
         }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+
+        .btn-link {
+            color: var(--primary);
+            background: transparent;
+            border: none;
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            padding: 0;
+            min-height: auto;
+        }
+
+        .btn-link:hover {
+            text-decoration: none;
+        }
+
+        .alert {
+            padding: 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .alert-destructive {
+            background: rgba(212, 24, 61, 0.1);
+            color: var(--destructive);
+            border: 1px solid rgba(212, 24, 61, 0.2);
+        }
+
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #059669;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .card-footer {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            border: none;
+            background: transparent;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-muted {
+            color: var(--muted-foreground);
+        }
+
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .demo-accounts {
+            background: var(--muted);
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            padding: 0.75rem;
+            font-size: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .demo-accounts p {
+            margin: 0.25rem 0;
+        }
+
+        .demo-accounts strong {
+            color: var(--card-foreground);
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="card auth-card">
-                    <div class="card-header auth-header text-center py-4">
-                        <h1 class="h3 mb-0">
-                            <i class="fas fa-shield-alt me-2"></i>SecureTask
-                        </h1>
-                        <p class="mb-0 mt-2">Sign in to your account</p>
-                    </div>
-                    <div class="card-body p-4">
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="card-header">
+                <h1 class="card-title">Login to SecureTask</h1>
+                <p class="card-description">
+                    Enter your credentials to access your account
+                </p>
+            </div>
+            
+            <form method="POST" action="/login">
+                <div class="card-content">
+                    <div class="space-y-4">
                         <!-- Flash Messages -->
                         <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
-                            <div class="alert alert-danger" role="alert">
-                                <ul class="mb-0">
-                                    <% validationErrors.forEach(error => { %>
-                                        <li><%= error.msg %></li>
-                                    <% }) %>
-                                </ul>
+                            <div class="alert alert-destructive" role="alert">
+                                <% validationErrors.forEach(error => { %>
+                                    <%= error.msg %>
+                                <% }) %>
                             </div>
                         <% } %>
 
@@ -65,70 +244,63 @@
                                 <%= successMessage %>
                             </div>
                         <% } %>
-
-                        <form method="POST" action="/login">
-                            <div class="mb-3">
+                        
+                        <div class="form-group">
+                            <div class="space-y-2">
                                 <label for="username" class="form-label">Username</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-user"></i>
-                                    </span>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           id="username" 
-                                           name="username" 
-                                           value="<%= typeof formData !== 'undefined' ? formData.username || '' : '' %>"
-                                           required 
-                                           autocomplete="username">
-                                </div>
+                                <input 
+                                    type="text" 
+                                    class="form-input" 
+                                    id="username" 
+                                    name="username" 
+                                    value="<%= typeof formData !== 'undefined' ? formData.username || '' : '' %>"
+                                    placeholder="Enter your username"
+                                    required 
+                                    autocomplete="username"
+                                />
                             </div>
-
-                            <div class="mb-4">
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="space-y-2">
                                 <label for="password" class="form-label">Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-lock"></i>
-                                    </span>
-                                    <input type="password" 
-                                           class="form-control" 
-                                           id="password" 
-                                           name="password" 
-                                           required 
-                                           autocomplete="current-password">
-                                </div>
+                                <input 
+                                    type="password" 
+                                    class="form-input" 
+                                    id="password" 
+                                    name="password" 
+                                    placeholder="Enter your password"
+                                    required 
+                                    autocomplete="current-password"
+                                />
                             </div>
-
-                            <button type="submit" class="btn btn-primary w-100 py-2">
-                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
-                            </button>
-                        </form>
-
-                        <hr class="my-4">
-
-                        <div class="text-center">
-                            <p class="mb-0">Don't have an account?</p>
-                            <a href="/register" class="btn btn-outline-primary mt-2">
-                                <i class="fas fa-user-plus me-2"></i>Register as Employee
-                            </a>
                         </div>
                     </div>
                 </div>
-
-                <!-- Default Admin Info -->
-                <div class="card mt-3 bg-info text-white">
-                    <div class="card-body text-center py-3">
-                        <small>
-                            <strong>Default Administrator:</strong><br>
-                            Username: <code class="text-light">admin</code><br>
-                            Password: <code class="text-light">Admin123!</code><br>
-                            <em>Change the password after first login!</em>
-                        </small>
+                
+                <div class="card-footer">
+                    <div class="space-y-4">
+                        <button type="submit" class="btn btn-primary">
+                            Login
+                        </button>
+                        
+                        <p class="text-center text-muted" style="font-size: 0.875rem;">
+                            Don't have an account? 
+                            <a href="/register" class="btn-link">
+                                Register here
+                            </a>
+                        </p>
+                        
+                        <div class="demo-accounts">
+                            <p><strong>Demo Accounts:</strong></p>
+                            <p>Admin: admin / Admin123!</p>
+                            <p>Manager: Create via admin panel</p>
+                            <p>Employee: Register as new user</p>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

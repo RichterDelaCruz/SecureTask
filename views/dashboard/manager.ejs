@@ -1,116 +1,536 @@
-<%- include('../header') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #0a0a0a;
+            --card: #ffffff;
+            --card-foreground: #0a0a0a;
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --secondary: #f1f1f3;
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --accent-foreground: #030213;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input: #ffffff;
+            --radius: 0.625rem;
+        }
 
-<!-- Flash Messages -->
-<% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <ul class="mb-0">
-            <% validationErrors.forEach(error => { %>
-                <li><%= error.msg %></li>
-            <% }) %>
-        </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-<% } %>
+        * {
+            box-sizing: border-box;
+        }
 
-<% if (typeof successMessage !== 'undefined' && successMessage) { %>
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <%= successMessage %>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-<% } %>
+        body {
+            background: var(--background);
+            color: var(--foreground);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            min-height: 100vh;
+        }
 
-<div class="row">
-    <div class="col-12">
-        <h1 class="h2 mb-4">
-            <i class="fas fa-tachometer-alt me-2"></i>Project Manager Dashboard
-        </h1>
-        
-        <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle me-2"></i>
-            Welcome, <strong><%= user.username %></strong>! You can create and manage tasks for your team.
-        </div>
-    </div>
-</div>
+        /* Navigation Styles */
+        .nav-bar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+        }
 
-<div class="row">
-    <!-- Create New Task -->
-    <div class="col-lg-4 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-plus me-2"></i>Create New Task
-                </h6>
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-brand {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--foreground);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            padding: 0.375rem 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            text-decoration: none;
+            color: var(--foreground);
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .nav-link:hover:not(.active) {
+            background: var(--accent);
+            color: var(--accent-foreground);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-user {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        .nav-button {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+            border: 1px solid var(--border);
+            padding: 0.375rem 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--accent);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card);
+            color: var(--card-foreground);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--card-foreground);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .card-description {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-modern {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .form-group-modern {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .form-label-modern {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--foreground);
+        }
+
+        .form-input-modern, .form-select-modern, .form-textarea-modern {
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            background: var(--input);
+        }
+
+        .form-input-modern:focus, .form-select-modern:focus, .form-textarea-modern:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(3, 2, 19, 0.1);
+        }
+
+        .form-textarea-modern {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Button Styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .btn-primary:hover {
+            background: rgba(3, 2, 19, 0.9);
+            color: var(--primary-foreground);
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border-color: var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+        }
+
+        .btn-destructive {
+            background: var(--destructive);
+            color: var(--destructive-foreground);
+        }
+
+        .btn-destructive:hover {
+            background: rgba(212, 24, 61, 0.9);
+            color: var(--destructive-foreground);
+        }
+
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
+
+        .btn.w-full {
+            width: 100%;
+        }
+
+        /* Alert Styles */
+        .alert-modern {
+            padding: 1rem;
+            border: 1px solid;
+            border-radius: calc(var(--radius) - 2px);
+            margin-bottom: 1rem;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+
+        .alert-destructive {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+
+        /* Table Styles */
+        .table-modern {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .table-modern th {
+            padding: 0.75rem;
+            text-align: left;
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+            background: var(--muted);
+        }
+
+        .table-modern td {
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .table-modern tr:hover {
+            background: var(--muted);
+        }
+
+        /* Badge Styles */
+        .badge-modern {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-default {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .badge-secondary {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+        }
+
+        /* Priority Badge Styles */
+        .badge-priority-high {
+            background: var(--destructive);
+            color: var(--destructive-foreground);
+        }
+
+        .badge-priority-medium {
+            background: #f59e0b;
+            color: #ffffff;
+        }
+
+        .badge-priority-low {
+            background: #10b981;
+            color: #ffffff;
+        }
+
+        /* Utility Classes */
+        .space-y-6 > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .text-muted {
+            color: var(--muted-foreground);
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .py-4 {
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+        }
+
+        .flex {
+            display: flex;
+        }
+
+        .gap-2 {
+            gap: 0.5rem;
+        }
+
+        .font-medium {
+            font-weight: 500;
+        }
+
+        .font-semibold {
+            font-weight: 600;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-muted {
+            color: var(--muted-foreground);
+        }
+
+        .w-32 {
+            width: 8rem;
+        }
+
+        .reassign-form {
+            display: inline-block;
+            min-width: 12rem;
+        }
+
+        .reassign-select {
+            padding: 0.375rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/dashboard" class="nav-brand">SecureTask</a>
+                <div class="nav-links">
+                    <a href="/dashboard" class="nav-link active">Dashboard</a>
+                    <% if (user.role === 'Administrator') { %>
+                        <a href="/admin/managers" class="nav-link">Manage Managers</a>
+                        <a href="/admin/logs" class="nav-link">System Logs</a>
+                    <% } %>
+                    <a href="/account/change-password" class="nav-link">Change Password</a>
+                </div>
             </div>
-            <div class="card-body">
-                <form method="POST" action="/dashboard/create-task">
-                    <div class="mb-3">
-                        <label for="title" class="form-label">Task Title *</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="title" 
-                               name="title" 
-                               required 
-                               maxlength="100">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="description" class="form-label">Description *</label>
-                        <textarea class="form-control" 
-                                  id="description" 
-                                  name="description" 
-                                  rows="3" 
-                                  required 
-                                  maxlength="500"></textarea>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="assignedTo" class="form-label">Assign To *</label>
-                        <select class="form-control" id="assignedTo" name="assignedTo" required>
-                            <option value="">Select Employee...</option>
-                            <% employees.forEach(employee => { %>
-                                <option value="<%= employee.id %>"><%= employee.username %></option>
-                            <% }) %>
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="priority" class="form-label">Priority</label>
-                        <select class="form-control" id="priority" name="priority">
-                            <option value="Low">Low</option>
-                            <option value="Medium" selected>Medium</option>
-                            <option value="High">High</option>
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary w-100" <% if (employees.length === 0) { %>disabled<% } %>>
-                        <i class="fas fa-plus me-2"></i>Create Task
-                    </button>
+            <div class="nav-right">
+                <span class="nav-user"><%= user.username %> (<%= user.role %>)</span>
+                <form method="POST" action="/logout" style="margin: 0;">
+                    <button type="submit" class="nav-button">Logout</button>
                 </form>
             </div>
         </div>
-    </div>
-    
-    <!-- My Created Tasks -->
-    <div class="col-lg-8 mb-4">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-tasks me-2"></i>My Created Tasks
-                </h6>
-                <span class="badge bg-primary"><%= tasks.length %> task(s)</span>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Flash Messages -->
+        <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
+            <div class="alert-modern alert-destructive" role="alert">
+                <ul style="margin: 0; padding-left: 1.5rem;">
+                    <% validationErrors.forEach(error => { %>
+                        <li><%= error.msg %></li>
+                    <% }) %>
+                </ul>
             </div>
-            <div class="card-body">
-                <% if (tasks.length === 0) { %>
-                    <div class="text-center text-muted py-4">
-                        <i class="fas fa-tasks fa-3x mb-3"></i>
-                        <p>No tasks created yet. Create your first task using the form on the left.</p>
-                    </div>
-                <% } else { %>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
+        <% } %>
+
+        <% if (typeof successMessage !== 'undefined' && successMessage) { %>
+            <div class="alert-modern alert-success" role="alert">
+                <%= successMessage %>
+            </div>
+        <% } %>
+
+        <div class="space-y-6">
+            <!-- Create New Task Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">Create New Task</h2>
+                    <p class="card-description">
+                        Assign a new task to an employee.
+                    </p>
+                </div>
+                <div class="card-content">
+                    <form method="POST" action="/dashboard/create-task" class="form-modern">
+                        <div class="form-group-modern">
+                            <label for="title" class="form-label-modern">Task Title</label>
+                            <input type="text" 
+                                   class="form-input-modern" 
+                                   id="title" 
+                                   name="title" 
+                                   required 
+                                   maxlength="100"
+                                   placeholder="Enter task title">
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label for="description" class="form-label-modern">Description</label>
+                            <textarea class="form-textarea-modern" 
+                                      id="description" 
+                                      name="description" 
+                                      rows="3" 
+                                      required 
+                                      maxlength="500"
+                                      placeholder="Enter task description"></textarea>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label for="assignedTo" class="form-label-modern">Assign to Employee</label>
+                            <select class="form-select-modern" id="assignedTo" name="assignedTo" required>
+                                <option value="">Select an employee</option>
+                                <% employees.forEach(employee => { %>
+                                    <option value="<%= employee.id %>"><%= employee.username %></option>
+                                <% }) %>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group-modern">
+                            <label for="priority" class="form-label-modern">Priority</label>
+                            <select class="form-select-modern" id="priority" name="priority" required>
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-full" <% if (employees.length === 0) { %>disabled<% } %>>
+                            Create Task
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- My Created Tasks Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">My Created Tasks</h2>
+                    <p class="card-description">
+                        Tasks you have created and assigned to employees.
+                    </p>
+                </div>
+                <div class="card-content">
+                    <% if (tasks.length === 0) { %>
+                        <p class="text-muted text-center py-4">
+                            No tasks created yet.
+                        </p>
+                    <% } else { %>
+                        <table class="table-modern">
+                            <thead>
                                 <tr>
-                                    <th>Task</th>
+                                    <th>Title</th>
+                                    <th>Assigned To</th>
                                     <th>Priority</th>
                                     <th>Status</th>
                                     <th>Created</th>
@@ -119,119 +539,100 @@
                             </thead>
                             <tbody>
                                 <% tasks.forEach(task => { %>
-                                    <tr>
+                                    <tr id="task-row-<%= task.id %>">
                                         <td>
-                                            <strong><%= task.title %></strong>
-                                            <br><small class="text-muted"><%= task.description %></small>
+                                            <div>
+                                                <div class="font-medium"><%= task.title %></div>
+                                                <div class="font-medium text-muted"><%= task.description %></div>
+                                            </div>
+                                        </td>
+                                        <td id="assigned_to_<%= task.id %>">
+                                            <div class="assigned-user-display" id="assigned_display_<%= task.id %>">
+                                                <%= task.assigned_to_username || 'Unknown' %>
+                                            </div>
                                         </td>
                                         <td>
                                             <% if (task.priority === 'High') { %>
-                                                <span class="badge bg-danger">High</span>
+                                                <span class="badge-modern badge-priority-high">High</span>
                                             <% } else if (task.priority === 'Medium') { %>
-                                                <span class="badge bg-warning">Medium</span>
+                                                <span class="badge-modern badge-priority-medium">Medium</span>
                                             <% } else { %>
-                                                <span class="badge bg-info">Low</span>
+                                                <span class="badge-modern badge-priority-low">Low</span>
                                             <% } %>
                                         </td>
                                         <td>
-                                            <% if (task.status === 'Completed') { %>
-                                                <span class="badge bg-success">Completed</span>
-                                            <% } else { %>
-                                                <span class="badge bg-primary">Pending</span>
-                                            <% } %>
+                                            <span class="badge-modern <%= task.status === 'Completed' ? 'badge-default' : 'badge-secondary' %>">
+                                                <%= task.status %>
+                                            </span>
                                         </td>
+                                        <td><%= new Date(task.created_at).toLocaleDateString() %></td>
                                         <td>
-                                            <small class="text-muted">
-                                                <%= new Date(task.created_at).toLocaleDateString() %>
-                                            </small>
-                                        </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <!-- Reassign Task -->
-                                                <button type="button" 
-                                                        class="btn btn-outline-primary" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#reassignModal<%= task.id %>"
-                                                        title="Reassign task">
-                                                    <i class="fas fa-user-edit me-1"></i>Reassign
-                                                </button>
-                                                
-                                                <!-- Delete Task -->
-                                                <form method="POST" action="/dashboard/delete-task" class="d-inline">
+                                            <div class="flex gap-2" id="actions_<%= task.id %>">
+                                                <form method="POST" action="/dashboard/delete-task" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this task?')">
                                                     <input type="hidden" name="taskId" value="<%= task.id %>">
-                                                    <button type="submit" 
-                                                            class="btn btn-outline-danger" 
-                                                            data-confirm-delete
-                                                            title="Delete task"
-                                                            onclick="return confirm('Are you sure you want to delete this task?')">
-                                                        <i class="fas fa-trash me-1"></i>Delete
+                                                    <button type="submit" class="btn btn-destructive btn-sm">
+                                                        Delete
                                                     </button>
                                                 </form>
                                             </div>
+                                            <div class="flex gap-2" id="reassign_actions_<%= task.id %>" style="display: none;">
+                                            <!-- Reassign actions removed -->
                                         </td>
                                     </tr>
                                 <% }) %>
                             </tbody>
                         </table>
-                    </div>
-                <% } %>
+                    <% } %>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- Reassignment Modals -->
-<% tasks.forEach(task => { %>
-<div class="modal fade" id="reassignModal<%= task.id %>" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Reassign Task: <%= task.title %></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <% if (employees.length === 0) { %>
+            <div class="alert-modern alert-destructive" role="alert" style="margin-top: 1.5rem;">
+                <strong>No employees found!</strong> 
+                Tasks can only be assigned to employees. Please ask your administrator to create employee accounts, 
+                or have employees register themselves at <a href="/register" style="color: inherit; text-decoration: underline;">/register</a>.
             </div>
-            <form method="POST" action="/dashboard/reassign-task">
-                <div class="modal-body">
-                    <input type="hidden" name="taskId" value="<%= task.id %>">
-                    <div class="mb-3">
-                        <label for="newAssignedTo<%= task.id %>" class="form-label">Reassign to:</label>
-                        <select class="form-control" id="newAssignedTo<%= task.id %>" name="newAssignedTo" required>
-                            <option value="">Select Employee...</option>
-                            <% employees.forEach(employee => { %>
-                                <option value="<%= employee.id %>" 
-                                        <% if (employee.id === task.assigned_to) { %>selected<% } %>>
-                                    <%= employee.username %>
-                                </option>
+        <% } %>
+        
+        <!-- Test button for debugging -->
+        <!-- Separate card for reassigning tasks -->
+        <div class="card" style="margin-top: 2rem;">
+            <div class="card-header">
+                <h2 class="card-title">Reassign Task</h2>
+                <p class="card-description">Select a task and employee to reassign.</p>
+            </div>
+            <div class="card-content">
+                <form method="POST" action="/dashboard/reassign-task" class="form-modern">
+                    <div class="form-group-modern">
+                        <label for="reassignTaskId" class="form-label-modern">Task</label>
+                        <select class="form-select-modern" id="reassignTaskId" name="taskId" required>
+                            <option value="">Select a task...</option>
+                            <% tasks.forEach(task => { %>
+                                <option value="<%= task.id %>"><%= task.title %> (Assigned to: <%= task.assigned_to_username || 'Unknown' %>)</option>
                             <% }) %>
                         </select>
                     </div>
-                    <div class="alert alert-info">
-                        <small>
-                            <i class="fas fa-info-circle me-1"></i>
-                            Select an employee to assign this task to. The task will be reassigned accordingly.
-                        </small>
+                    <div class="form-group-modern">
+                        <label for="reassignNewAssignee" class="form-label-modern">Employee</label>
+                        <select class="form-select-modern" id="reassignNewAssignee" name="newAssignedTo" required>
+                            <option value="">Select employee...</option>
+                            <% employees.forEach(employee => { %>
+                                <option value="<%= employee.id %>"><%= employee.username %></option>
+                            <% }) %>
+                        </select>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Reassign Task</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<% }) %>
-
-<% if (employees.length === 0) { %>
-    <div class="row">
-        <div class="col-12">
-            <div class="alert alert-warning" role="alert">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                <strong>No employees found!</strong> 
-                Tasks can only be assigned to employees. Please ask your administrator to create employee accounts, 
-                or have employees register themselves at <a href="/register" class="alert-link">/register</a>.
+                    <button type="submit" class="btn btn-primary w-full" <% if (tasks.length === 0 || employees.length === 0) { %>disabled<% } %>>
+                        Reassign Task
+                    </button>
+                </form>
             </div>
         </div>
     </div>
-<% } %>
 
-<%- include('../footer') %>
+    <script>
+    <!-- All reassign JavaScript removed; now handled by form submit only -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

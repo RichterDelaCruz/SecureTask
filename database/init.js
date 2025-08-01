@@ -210,6 +210,24 @@ const dbHelpers = {
             "SELECT * FROM system_logs ORDER BY timestamp DESC LIMIT 1000",
             callback
         );
+    },
+
+    // Statistics operations
+    getUserCounts: (callback) => {
+        db.all(`
+            SELECT 
+                role,
+                COUNT(*) as count
+            FROM users 
+            GROUP BY role
+        `, callback);
+    },
+
+    getTotalTaskCount: (callback) => {
+        db.get(
+            "SELECT COUNT(*) as count FROM tasks",
+            callback
+        );
     }
 };
 

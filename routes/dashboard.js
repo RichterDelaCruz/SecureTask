@@ -15,9 +15,55 @@ router.get('/', (req, res) => {
     
     switch (user.role) {
         case 'Administrator':
-            res.render('dashboard/admin', {
-                title: 'Administrator Dashboard - SecureTask',
-                user: user
+            // Get system statistics for admin dashboard
+            dbHelpers.getUserCounts((err, userCounts) => {
+                if (err) {
+                    securityLogger.error('Failed to fetch user counts for admin dashboard', {
+                        username: user.username,
+                        error: err.message
+                    });
+                    userCounts = [];
+                }
+
+                dbHelpers.getTotalTaskCount((err, taskCount) => {
+                    if (err) {
+                        securityLogger.error('Failed to fetch task count for admin dashboard', {
+                            username: user.username,
+                            error: err.message
+                        });
+                        taskCount = { count: 0 };
+                    }
+
+                    // Process user counts into a more usable format
+                    const stats = {
+                        totalUsers: 0,
+                        administrators: 0,
+                        projectManagers: 0,
+                        employees: 0,
+                        totalTasks: taskCount.count
+                    };
+
+                    userCounts.forEach(item => {
+                        stats.totalUsers += item.count;
+                        switch (item.role) {
+                            case 'Administrator':
+                                stats.administrators = item.count;
+                                break;
+                            case 'Project Manager':
+                                stats.projectManagers = item.count;
+                                break;
+                            case 'Employee':
+                                stats.employees = item.count;
+                                break;
+                        }
+                    });
+
+                    res.render('dashboard/admin', {
+                        title: 'Administrator Dashboard - SecureTask',
+                        user: user,
+                        stats: stats
+                    });
+                });
             });
             break;
             

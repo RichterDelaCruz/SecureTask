@@ -4,142 +4,330 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #0a0a0a;
+            --card: #ffffff;
+            --card-foreground: #0a0a0a;
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --secondary: #f1f1f3;
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --accent-foreground: #030213;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input: #ffffff;
+            --radius: 0.625rem;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--background);
+            color: var(--foreground);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
             min-height: 100vh;
             display: flex;
             align-items: center;
+            justify-content: center;
+            padding: 1rem;
         }
-        .auth-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-            border: none;
+
+        /* Container */
+        .page-container {
+            width: 100%;
+            max-width: 28rem;
         }
-        .auth-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px 15px 0 0;
+
+        /* Card Styles */
+        .card {
+            background: var(--card);
+            color: var(--card-foreground);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            margin-bottom: 1rem;
         }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--card-foreground);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .card-description {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .card-footer {
+            padding: 0 1.5rem 1.5rem 1.5rem;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--foreground);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            background: var(--input);
+            color: var(--foreground);
+            font-size: 0.875rem;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(3, 2, 19, 0.1);
+        }
+
+        .form-input::placeholder {
+            color: var(--muted-foreground);
+        }
+
+        /* Button */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+            background: var(--primary);
+            color: var(--primary-foreground);
+            width: 100%;
         }
+
         .btn-primary:hover {
-            background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+            background: color-mix(in srgb, var(--primary) 90%, black);
+            color: var(--primary-foreground);
         }
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+
+        .btn-link {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--border);
+            text-decoration: none;
+        }
+
+        .btn-link:hover {
+            background: var(--accent);
+            color: var(--primary);
+            text-decoration: underline;
+        }
+
+        /* Alert Styles */
+        .alert {
+            padding: 1rem;
+            border-radius: calc(var(--radius) - 2px);
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .alert-destructive {
+            background: color-mix(in srgb, var(--destructive) 10%, white);
+            color: var(--destructive);
+            border: 1px solid color-mix(in srgb, var(--destructive) 30%, white);
+        }
+
+        .alert ul {
+            margin: 0;
+            padding-left: 1.25rem;
+        }
+
+        /* Utility Classes */
+        .space-y-4 > * + * {
+            margin-top: 1rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        .text-muted {
+            color: var(--muted-foreground);
+        }
+
+        /* Registration Info Card */
+        .info-card {
+            background: color-mix(in srgb, #f59e0b 10%, white);
+            border: 1px solid color-mix(in srgb, #f59e0b 30%, white);
+            color: #92400e;
+            padding: 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.75rem;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="card auth-card">
-                    <div class="card-header auth-header text-center py-4">
-                        <h1 class="h3 mb-0">
-                            <i class="fas fa-shield-alt me-2"></i>SecureTask
-                        </h1>
-                        <p class="mb-0 mt-2">Create your employee account</p>
+    <div class="page-container">
+        <div class="card">
+            <div class="card-header">
+                <h1 class="card-title">Register for SecureTask</h1>
+                <p class="card-description">
+                    Create a new Employee account
+                </p>
+            </div>
+            <div class="card-content">
+                <!-- Flash Messages -->
+                <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
+                    <div class="alert alert-destructive" role="alert">
+                        <ul>
+                            <% validationErrors.forEach(error => { %>
+                                <li><%= error.msg %></li>
+                            <% }) %>
+                        </ul>
                     </div>
-                    <div class="card-body p-4">
-                        <!-- Flash Messages -->
-                        <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
-                            <div class="alert alert-danger" role="alert">
-                                <ul class="mb-0">
-                                    <% validationErrors.forEach(error => { %>
-                                        <li><%= error.msg %></li>
-                                    <% }) %>
-                                </ul>
-                            </div>
-                        <% } %>
+                <% } %>
 
-                        <form method="POST" action="/register">
-                            <div class="mb-3">
-                                <label for="username" class="form-label">Username</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-user"></i>
-                                    </span>
-                                    <input type="text" 
-                                           class="form-control" 
-                                           id="username" 
-                                           name="username" 
-                                           value="<%= typeof formData !== 'undefined' ? formData.username || '' : '' %>"
-                                           required 
-                                           autocomplete="username">
-                                </div>
-                                <div class="form-text">3-30 characters, letters, numbers, and underscores only</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="password" class="form-label">Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-lock"></i>
-                                    </span>
-                                    <input type="password" 
-                                           class="form-control" 
-                                           id="password" 
-                                           name="password" 
-                                           required 
-                                           autocomplete="new-password">
-                                </div>
-                                <div class="form-text">
-                                    At least 8 characters with uppercase, lowercase, number, and special character
-                                </div>
-                            </div>
-
-                            <div class="mb-4">
-                                <label for="confirmPassword" class="form-label">Confirm Password</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">
-                                        <i class="fas fa-lock"></i>
-                                    </span>
-                                    <input type="password" 
-                                           class="form-control" 
-                                           id="confirmPassword" 
-                                           name="confirmPassword" 
-                                           required 
-                                           autocomplete="new-password">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-primary w-100 py-2">
-                                <i class="fas fa-user-plus me-2"></i>Register
-                            </button>
-                        </form>
-
-                        <hr class="my-4">
-
-                        <div class="text-center">
-                            <p class="mb-0">Already have an account?</p>
-                            <a href="/login" class="btn btn-outline-primary mt-2">
-                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
-                            </a>
-                        </div>
+                <form method="POST" action="/register" class="space-y-4">
+                    <div class="form-group">
+                        <label for="username" class="form-label">Username</label>
+                        <input 
+                            id="username"
+                            type="text" 
+                            name="username" 
+                            class="form-input"
+                            value="<%= typeof formData !== 'undefined' ? formData.username || '' : '' %>"
+                            placeholder="Choose a username"
+                            required 
+                            autocomplete="username"
+                        />
                     </div>
-                </div>
 
-                <!-- Registration Info -->
-                <div class="card mt-3 bg-warning text-dark">
-                    <div class="card-body text-center py-3">
-                        <small>
-                            <strong>Note:</strong> Registration creates an Employee account only.<br>
-                            Project Manager accounts are created by Administrators.
-                        </small>
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input 
+                            id="password"
+                            type="password" 
+                            name="password" 
+                            class="form-input"
+                            placeholder="Choose a password"
+                            required 
+                            autocomplete="new-password"
+                        />
                     </div>
+
+                    <div class="form-group">
+                        <label for="confirmPassword" class="form-label">Confirm Password</label>
+                        <input 
+                            id="confirmPassword"
+                            type="password" 
+                            name="confirmPassword" 
+                            class="form-input"
+                            placeholder="Confirm your password"
+                            required 
+                            autocomplete="new-password"
+                        />
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card-footer">
+                <div class="space-y-4">
+                    <button type="submit" form="register-form" class="btn btn-primary">
+                        Register
+                    </button>
+                    
+                    <p class="text-sm text-muted text-center">
+                        Already have an account?
+                        <a href="/login" class="btn btn-link" style="display: inline; padding: 0; width: auto;">
+                            Login here
+                        </a>
+                    </p>
                 </div>
             </div>
         </div>
+
+        <!-- Registration Info -->
+        <div class="info-card">
+            <strong>Note:</strong> Registration creates an Employee account only.<br>
+            Project Manager accounts are created by Administrators.
+        </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Password Validation Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            const passwordInput = document.getElementById('password');
+            const confirmInput = document.getElementById('confirmPassword');
+            
+            // Add form id for the submit button
+            form.id = 'register-form';
+            
+            function checkPasswordMatch() {
+                if (confirmInput.value && passwordInput.value !== confirmInput.value) {
+                    confirmInput.setCustomValidity('Passwords do not match');
+                } else {
+                    confirmInput.setCustomValidity('');
+                }
+            }
+            
+            passwordInput.addEventListener('input', checkPasswordMatch);
+            confirmInput.addEventListener('input', checkPasswordMatch);
+        });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

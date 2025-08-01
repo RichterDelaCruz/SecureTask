@@ -1,85 +1,358 @@
-<%- include('../header') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #0a0a0a;
+            --card: #ffffff;
+            --card-foreground: #0a0a0a;
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --secondary: #f1f1f3;
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --accent-foreground: #030213;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input: #ffffff;
+            --radius: 0.625rem;
+        }
 
-<div class="row">
-    <div class="col-12">
-        <h1 class="h2 mb-4">
-            <i class="fas fa-tachometer-alt me-2"></i>Administrator Dashboard
-        </h1>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--background);
+            color: var(--foreground);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* Navigation Styles */
+        .nav-bar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-brand {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--foreground);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            padding: 0.375rem 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            text-decoration: none;
+            color: var(--foreground);
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .nav-link:hover:not(.active) {
+            background: var(--accent);
+            color: var(--accent-foreground);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-user {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        .nav-button {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+            border: 1px solid var(--border);
+            padding: 0.375rem 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--accent);
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        /* Card Styles */
+        .card {
+            background: var(--card);
+            color: var(--card-foreground);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            margin-bottom: 1.5rem;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--card-foreground);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .card-description {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        /* Grid Layouts */
+        .grid {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .grid-cols-1 {
+            grid-template-columns: repeat(1, minmax(0, 1fr));
+        }
+
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 768px) {
+            .grid-cols-2 {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border-color: var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+        }
+
+        /* Statistics */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            font-size: 0.875rem;
+        }
+
+        .stat-item:not(:last-child) {
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        /* Utility Classes */
+        .space-y-6 > * + * {
+            margin-top: 1.5rem;
+        }
+
+        .space-y-2 > * + * {
+            margin-top: 0.5rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .font-medium {
+            font-weight: 500;
+        }
+
+        .text-sm {
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .grid-cols-2 {
+                grid-template-columns: repeat(1, minmax(0, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+        <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/dashboard" class="nav-brand">SecureTask</a>
+                <div class="nav-links">
+                    <a href="/dashboard" class="nav-link active">Dashboard</a>
+                    <a href="/admin/managers" class="nav-link">Manage Managers</a>
+                    <a href="/admin/logs" class="nav-link">System Logs</a>
+                    <a href="/account/change-password" class="nav-link">Change Password</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <span class="nav-user"><%= user.username %> (Administrator)</span>
+                <form method="POST" action="/logout" style="margin: 0;">
+                    <button type="submit" class="nav-button">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="space-y-6">
+            <!-- Admin Dashboard Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h1 class="card-title">Administrator Dashboard</h1>
+                    <p class="card-description">
+                        Welcome, Administrator. You have full system access.
+                    </p>
+                </div>
+                <div class="card-content">
+                    <div class="grid grid-cols-2">
+                        <!-- System Management Card -->
+                        <div class="card">
+                            <div class="card-content" style="padding: 1rem;">
+                                <h3 class="font-medium mb-2">System Management</h3>
+                                <p class="text-sm mb-4" style="color: var(--muted-foreground);">
+                                    Manage Project Manager accounts and view system activity.
+                                </p>
+                                <div class="space-y-2">
+                                    <a href="/admin/logs" class="btn btn-outline">
+                                        <i class="fas fa-file-alt"></i>
+                                        View System Logs
+                                    </a>
+                                    <a href="/admin/managers" class="btn btn-outline">
+                                        <i class="fas fa-users"></i>
+                                        Manage Manager Accounts
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- System Statistics Card -->
+                        <div class="card">
+                            <div class="card-content" style="padding: 1rem;">
+                                <h3 class="font-medium mb-2">System Statistics</h3>
+                                <div class="space-y-2">
+                                    <div class="stat-item">
+                                        <span>Total Users:</span>
+                                        <span class="stat-value"><%= stats.totalUsers %></span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span>Project Managers:</span>
+                                        <span class="stat-value"><%= stats.projectManagers %></span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span>Employees:</span>
+                                        <span class="stat-value"><%= stats.employees %></span>
+                                    </div>
+                                    <div class="stat-item">
+                                        <span>Total Tasks:</span>
+                                        <span class="stat-value"><%= stats.totalTasks %></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+
         
-        <div class="alert alert-info" role="alert">
-            <i class="fas fa-info-circle me-2"></i>
-            Welcome, <strong><%= user.username %></strong>! You have administrative privileges to manage the system.
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <div class="display-1 text-primary mb-3">
-                    <i class="fas fa-users"></i>
-                </div>
-                <h5 class="card-title">Manage Project Managers</h5>
-                <p class="card-text">Create and manage Project Manager accounts who can assign tasks to employees.</p>
-                <a href="/admin/managers" class="btn btn-primary">
-                    <i class="fas fa-users me-2"></i>Manage Managers
-                </a>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card h-100">
-            <div class="card-body text-center">
-                <div class="display-1 text-info mb-3">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <h5 class="card-title">System Logs</h5>
-                <p class="card-text">View security audit logs, authentication events, and system activities.</p>
-                <a href="/admin/logs" class="btn btn-info">
-                    <i class="fas fa-file-alt me-2"></i>View Logs
-                </a>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-shield-alt me-2"></i>System Security Status
-                </h6>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <strong>Authentication System</strong>
-                        </div>
-                        <small class="text-muted">All login attempts are logged and monitored</small>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <strong>Access Control</strong>
-                        </div>
-                        <small class="text-muted">Role-based permissions are enforced</small>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="d-flex align-items-center">
-                            <i class="fas fa-check-circle text-success me-2"></i>
-                            <strong>Audit Logging</strong>
-                        </div>
-                        <small class="text-muted">All security events are recorded</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<%- include('../footer') %>

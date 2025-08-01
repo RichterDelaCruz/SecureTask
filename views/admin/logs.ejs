@@ -1,54 +1,496 @@
-<%- include('../header') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --background: #ffffff;
+            --foreground: #0a0a0a;
+            --card: #ffffff;
+            --card-foreground: #0a0a0a;
+            --primary: #030213;
+            --primary-foreground: #ffffff;
+            --secondary: #f1f1f3;
+            --secondary-foreground: #030213;
+            --muted: #ececf0;
+            --muted-foreground: #717182;
+            --accent: #e9ebef;
+            --accent-foreground: #030213;
+            --destructive: #d4183d;
+            --destructive-foreground: #ffffff;
+            --border: rgba(0, 0, 0, 0.1);
+            --input: #ffffff;
+            --radius: 0.625rem;
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+        }
 
-<div class="row">
-    <div class="col-12">
-        <h1 class="h2 mb-4">
-            <i class="fas fa-file-alt me-2"></i>System Logs
-        </h1>
-        
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-                <li class="breadcrumb-item active">System Logs</li>
-            </ol>
-        </nav>
-    </div>
-</div>
+        * {
+            box-sizing: border-box;
+        }
 
-<div class="row mb-3">
-    <div class="col-12">
-        <div class="alert alert-info" role="alert">
+        body {
+            background: var(--background);
+            color: var(--foreground);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .modern-nav {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        /* Navigation Styles */
+        .nav-bar {
+            background: var(--card);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 0;
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .nav-brand {
+            font-size: 1.125rem;
+            font-weight: 500;
+            color: var(--foreground);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .nav-link {
+            padding: 0.375rem 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            text-decoration: none;
+            color: var(--foreground);
+            transition: background-color 0.2s ease;
+            font-size: 0.875rem;
+        }
+
+        .nav-link.active {
+            background: var(--primary);
+            color: var(--primary-foreground);
+        }
+
+        .nav-link:hover:not(.active) {
+            background: var(--accent);
+            color: var(--accent-foreground);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-user {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        .nav-button {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+            border: 1px solid var(--border);
+            padding: 0.375rem 0.75rem;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .nav-button:hover {
+            background: var(--accent);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--foreground);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .page-description {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: 600;
+            color: var(--foreground);
+            margin: 0 0 0.5rem 0;
+        }
+
+        .page-description {
+            color: var(--muted-foreground);
+            font-size: 1rem;
+            margin: 0 0 1rem 0;
+        }
+
+        .breadcrumb {
+            background: var(--card);
+            padding: 1rem;
+            margin: 0 0 1rem 0;
+            font-size: 0.875rem;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+
+        .breadcrumb-item a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .breadcrumb-item a:hover {
+            text-decoration: underline;
+        }
+
+        .breadcrumb-item.active {
+            color: var(--muted-foreground);
+        }
+
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: ">";
+            padding: 0 0.5rem;
+            color: var(--muted-foreground);
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: calc(var(--radius) - 2px);
+            background: var(--card);
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            background: var(--accent);
+            text-decoration: none;
+        }
+
+        .card {
+            background: var(--card);
+            color: var(--card-foreground);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            padding: 1.5rem 1.5rem 0 1.5rem;
+            border: none;
+            background: transparent;
+        }
+
+        .card-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            line-height: 1.2;
+            margin: 0 0 0.5rem 0;
+            color: var(--card-foreground);
+        }
+
+        .card-description {
+            color: var(--muted-foreground);
+            font-size: 0.875rem;
+            margin: 0;
+        }
+
+        .card-content {
+            padding: 1.5rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            white-space: nowrap;
+            border-radius: calc(var(--radius) - 2px);
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            gap: 0.5rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-outline:hover {
+            background: var(--accent);
+            color: var(--accent-foreground);
+            text-decoration: none;
+        }
+
+        .alert {
+            border-radius: calc(var(--radius) - 2px);
+            border: 1px solid transparent;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .alert-info {
+            background: rgba(59, 130, 246, 0.1);
+            color: var(--info);
+            border-color: rgba(59, 130, 246, 0.2);
+        }
+
+        .table-container {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .table {
+            margin: 0;
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.875rem;
+        }
+
+        .table th {
+            background: var(--muted);
+            color: var(--foreground);
+            font-weight: 600;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        .table tbody tr:hover {
+            background: var(--muted);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: calc(var(--radius) - 4px);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .badge-info {
+            background: var(--info);
+            color: white;
+        }
+
+        .badge-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .badge-danger {
+            background: var(--destructive);
+            color: var(--destructive-foreground);
+        }
+
+        .badge-secondary {
+            background: var(--secondary);
+            color: var(--secondary-foreground);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--muted-foreground);
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .log-stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .log-stat {
+            font-size: 0.875rem;
+            color: var(--muted-foreground);
+        }
+
+        .legends {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .table {
+                font-size: 0.75rem;
+            }
+            
+            .table th,
+            .table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="nav-container">
+            <div class="nav-left">
+                <a href="/dashboard" class="nav-brand">SecureTask</a>
+                <div class="nav-links">
+                    <a href="/dashboard" class="nav-link">Dashboard</a>
+                    <a href="/admin/managers" class="nav-link">Manage Managers</a>
+                    <a href="/admin/logs" class="nav-link active">System Logs</a>
+                    <a href="/account/change-password" class="nav-link">Change Password</a>
+                </div>
+            </div>
+            <div class="nav-right">
+                <span class="nav-user"><%= user.username %> (Administrator)</span>
+                <form method="POST" action="/logout" style="margin: 0;">
+                    <button type="submit" class="nav-button">Logout</button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">System Audit Logs</h1>
+            <p class="page-description">
+                Comprehensive log of all significant system activities and security events.
+            </p>
+        </div>
+
+        <!-- Info Banner -->
+        <div class="alert alert-info">
             <i class="fas fa-info-circle me-2"></i>
             Showing the most recent <strong><%= logs.length %></strong> security events (maximum 1000 entries).
             Logs are automatically created for authentication, authorization, and security-sensitive operations.
         </div>
-    </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
+        <!-- Logs Card -->
         <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-list me-2"></i>Security Audit Log
-                </h6>
-                <button class="btn btn-sm btn-outline-primary" onclick="location.reload()">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 1.5rem;">
+                <div>
+                    <h2 class="card-title">Security Audit Log</h2>
+                    <p class="card-description" style="margin: 0;">
+                        Real-time monitoring of system activities and security events.
+                    </p>
+                </div>
+                <button class="btn btn-outline" onclick="location.reload()">
                     <i class="fas fa-sync-alt me-1"></i>Refresh
                 </button>
             </div>
-            <div class="card-body p-0">
+            <div class="card-content" style="padding: 0;">
                 <% if (logs.length === 0) { %>
-                    <div class="text-center text-muted py-5">
-                        <i class="fas fa-file-alt fa-3x mb-3"></i>
+                    <div class="empty-state">
+                        <i class="fas fa-file-alt"></i>
                         <p>No system logs available yet.</p>
+                        <p style="font-size: 0.875rem;">Security events will appear here as they occur.</p>
                     </div>
                 <% } else { %>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover mb-0">
-                            <thead class="table-dark">
+                    <div style="padding: 1.5rem 1.5rem 0 1.5rem;">
+                        <div class="log-stats">
+                            <span class="log-stat">Total Entries: <strong><%= logs.length %></strong></span>
+                            <span class="log-stat">INFO: <strong><%= logs.filter(l => l.level === 'INFO').length %></strong></span>
+                            <span class="log-stat">WARN: <strong><%= logs.filter(l => l.level === 'WARN').length %></strong></span>
+                            <span class="log-stat">ERROR: <strong><%= logs.filter(l => l.level === 'ERROR').length %></strong></span>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container" style="border: none; border-radius: 0;">
+                        <table class="table">
+                            <thead>
                                 <tr>
-                                    <th style="width: 140px;">Timestamp</th>
-                                    <th style="width: 80px;">Level</th>
+                                    <th style="width: 180px;">Timestamp</th>
+                                    <th style="width: 100px;">Level</th>
                                     <th style="width: 120px;">User</th>
                                     <th>Event Message</th>
                                     <th style="width: 100px;">IP Address</th>
@@ -56,35 +498,43 @@
                             </thead>
                             <tbody>
                                 <% logs.forEach(log => { %>
-                                                                        <tr>
+                                    <tr>
                                         <td>
-                                            <small class="text-nowrap">
-                                                <%= new Date(log.timestamp).toLocaleString() %>
-                                            </small>
+                                            <span style="font-family: 'Courier New', monospace; font-size: 0.75rem; color: var(--muted-foreground);">
+                                                <%= new Date(log.timestamp).toLocaleString('en-US', {
+                                                    year: 'numeric',
+                                                    month: '2-digit',
+                                                    day: '2-digit',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit',
+                                                    second: '2-digit',
+                                                    hour12: false
+                                                }) %>
+                                            </span>
                                         </td>
                                         <td>
                                             <% if (log.level === 'ERROR') { %>
-                                                <span class="badge bg-danger">ERROR</span>
+                                                <span class="badge badge-danger">ERROR</span>
                                             <% } else if (log.level === 'WARN') { %>
-                                                <span class="badge bg-warning text-dark">WARN</span>
+                                                <span class="badge badge-warning">WARN</span>
                                             <% } else { %>
-                                                <span class="badge bg-info">INFO</span>
+                                                <span class="badge badge-info">INFO</span>
                                             <% } %>
                                         </td>
                                         <td>
                                             <% if (log.username) { %>
-                                                <span class="badge bg-secondary"><%= log.username %></span>
+                                                <span class="badge badge-secondary"><%= log.username %></span>
                                             <% } else { %>
-                                                <span class="text-muted">System</span>
+                                                <span style="color: var(--muted-foreground); font-size: 0.875rem;">System</span>
                                             <% } %>
                                         </td>
                                         <td>
                                             <%= log.message %>
                                         </td>
                                         <td>
-                                            <small class="text-muted">
+                                            <span style="color: var(--muted-foreground); font-size: 0.75rem; font-family: 'Courier New', monospace;">
                                                 <%= log.ip_address || 'N/A' %>
-                                            </small>
+                                            </span>
                                         </td>
                                     </tr>
                                 <% }) %>
@@ -94,35 +544,34 @@
                 <% } %>
             </div>
         </div>
-    </div>
-</div>
 
-<div class="row mt-4">
-    <div class="col-12">
+        <!-- Log Level Meanings -->
         <div class="card">
             <div class="card-header">
-                <h6 class="card-title mb-0">
-                    <i class="fas fa-question-circle me-2"></i>Log Level Meanings
-                </h6>
+                <h2 class="card-title">Log Level Meanings</h2>
+                <p class="card-description">
+                    Understanding the different types of security events and their significance.
+                </p>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
-                        <span class="badge bg-info me-2">INFO</span>
-                        <small>Normal security events (successful logins, account creation, etc.)</small>
+            <div class="card-content">
+                <div class="legends">
+                    <div class="legend-item">
+                        <span class="badge badge-info">INFO</span>
+                        <span style="font-size: 0.875rem;">Normal security events (successful logins, account creation, etc.)</span>
                     </div>
-                    <div class="col-md-4">
-                        <span class="badge bg-warning text-dark me-2">WARN</span>
-                        <small>Potential security concerns (failed logins, access denials, etc.)</small>
+                    <div class="legend-item">
+                        <span class="badge badge-warning">WARN</span>
+                        <span style="font-size: 0.875rem;">Potential security concerns (failed logins, access denials, etc.)</span>
                     </div>
-                    <div class="col-md-4">
-                        <span class="badge bg-danger me-2">ERROR</span>
-                        <small>System errors and security violations</small>
+                    <div class="legend-item">
+                        <span class="badge badge-danger">ERROR</span>
+                        <span style="font-size: 0.875rem;">System errors and security violations</span>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<%- include('../footer') %>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
