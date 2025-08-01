@@ -91,6 +91,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="POST" action="/logout" class="d-inline">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                         <button type="submit" class="dropdown-item">
                                             <i class="fas fa-sign-out-alt me-1"></i>Logout
                                         </button>
@@ -196,6 +197,7 @@
                                                 <td>
                                                     <% if (task.status === 'Pending') { %>
                                                         <form method="POST" action="/dashboard/update-task-status" class="d-inline">
+                                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                             <input type="hidden" name="taskId" value="<%= task.id %>">
                                                             <input type="hidden" name="status" value="Completed">
                                                             <button type="submit" class="btn btn-sm btn-success" title="Mark as Completed">
@@ -204,6 +206,7 @@
                                                         </form>
                                                     <% } else { %>
                                                         <form method="POST" action="/dashboard/update-task-status" class="d-inline">
+                                                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                             <input type="hidden" name="taskId" value="<%= task.id %>">
                                                             <input type="hidden" name="status" value="Pending">
                                                             <button type="submit" class="btn btn-sm btn-warning" title="Mark as Pending">

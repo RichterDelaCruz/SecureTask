@@ -212,6 +212,8 @@ router.post('/login',
                     username: user.username,
                     role: user.role
                 };
+                
+                req.session.lastAuthenticatedAt = Date.now();
 
                 securityLogger.info('Successful login', { 
                     username, 

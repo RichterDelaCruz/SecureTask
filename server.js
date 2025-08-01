@@ -1,7 +1,10 @@
+
+const helmet = require('helmet');
+const csurf = require('csurf');
+
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3').verbose();
@@ -12,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
+const resetRoutes = require('./routes/reset');
 
 // Import middleware
 const { authenticateUser, authorizeRole } = require('./middleware/auth');
@@ -51,6 +55,7 @@ const loginLimiter = rateLimit({
 
 app.use(limiter);
 app.use('/login', loginLimiter);
+app.use('/', resetRoutes);
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -74,6 +79,16 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24 // 24 hours
     }
 }));
+
+// CSRF protection
+app.use(csurf());
+
+// Make CSRF token available in all views
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+
 
 // Initialize database
 const { db, dbHelpers } = require('./database/init');
@@ -118,21 +133,39 @@ app.use((req, res, next) => {
     });
 });
 
+
+
 app.use((err, req, res, next) => {
-    securityLogger.error('Application error', { 
-        error: err.message, 
-        stack: err.stack,
-        url: req.url,
-        method: req.method,
-        ip: req.ip,
-        user: req.session.user?.username
-    });
-    
-    res.status(500).render('error', { 
-        message: 'Internal server error', 
-        user: req.session.user 
-    });
+    if (err.code === 'EBADCSRFTOKEN') {
+        securityLogger.warn('Invalid CSRF token', {
+            url: req.url,
+            ip: req.ip,
+            user: req.session.user?.username || 'unknown'
+        });
+
+        req.session.destroy(() => {
+            res.status(403).render('error', {
+                message: 'Invalid or expired form submission. Please log in again.',
+                user: null
+            });
+        });
+    } else {
+        securityLogger.error('Application error', {
+            error: err.message,
+            stack: err.stack,
+            url: req.url,
+            method: req.method,
+            ip: req.ip,
+            user: req.session.user?.username
+        });
+
+        res.status(500).render('error', {
+            message: 'Internal server error',
+            user: req.session.user
+        });
+    }
 });
+
 
 app.listen(PORT, () => {
     console.log(`SecureTask server running on port ${PORT}`);

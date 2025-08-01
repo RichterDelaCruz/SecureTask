@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="card-body">
                 <form method="POST" action="/admin/create-manager">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                     <div class="mb-3">
                         <label for="username" class="form-label">Username *</label>
                         <input type="text" 
@@ -124,6 +125,7 @@ document.addEventListener('DOMContentLoaded', function() {
                                         </td>
                                         <td>
                                             <form method="POST" action="/admin/delete-manager" class="d-inline">
+                                                <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                 <input type="hidden" name="managerId" value="<%= manager.id %>">
                                                 <button type="submit" 
                                                         class="btn btn-sm btn-outline-danger" 

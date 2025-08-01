@@ -1,0 +1,11 @@
+<%- include('../layout') %>
+
+<div class="container mt-5">
+  <h2>Reset Link Sent</h2>
+  <p>A reset link has been generated for <strong><%= username %></strong>.</p>
+  <p>For now, copy and paste this URL into your browser:</p>
+
+  <div class="alert alert-info">
+    <code>/reset-password/<%= token %></code>
+  </div>
+</div>

@@ -91,6 +91,7 @@
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="POST" action="/logout" class="d-inline">
+                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                         <button type="submit" class="dropdown-item">
                                             <i class="fas fa-sign-out-alt me-1"></i>Logout
                                         </button>
@@ -150,6 +151,7 @@
                     </div>
                     <div class="card-body">
                         <form method="POST" action="/dashboard/create-task">
+                            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                             <div class="mb-3">
                                 <label for="title" class="form-label">Task Title *</label>
                                 <input type="text" 
@@ -244,6 +246,7 @@
                                                 </td>
                                                 <td>
                                                     <form method="POST" action="/dashboard/delete-task" class="d-inline">
+                                                        <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                                                         <input type="hidden" name="taskId" value="<%= task.id %>">
                                                         <button type="submit" 
                                                                 class="btn btn-sm btn-outline-danger" 

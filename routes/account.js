@@ -4,13 +4,15 @@ const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
 
+const { requireFreshLogin } = require('../middleware/freshLogin');
+
 const router = express.Router();
 
 // Apply validation data injection to all routes
 router.use(injectValidationData);
 
 // Change password page
-router.get('/change-password', (req, res) => {
+router.get('/change-password', requireFreshLogin(15), (req, res) => {
     const user = req.session.user;
     const successMessage = req.session.successMessage;
     delete req.session.successMessage;
@@ -24,6 +26,7 @@ router.get('/change-password', (req, res) => {
 
 // Change password form handler
 router.post('/change-password',
+    requireFreshLogin(15),
     validationSets.changePassword,
     handleValidationErrors,
     async (req, res) => {
