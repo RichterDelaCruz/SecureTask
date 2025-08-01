@@ -81,6 +81,11 @@ const { db, dbHelpers } = require('./database/init');
 // Set database helpers for logger
 setDbHelpers(dbHelpers);
 
+// Favicon route to prevent 404 warnings
+app.get('/favicon.ico', (req, res) => {
+    res.status(204).end(); // No Content response
+});
+
 // Routes
 app.use('/', authRoutes);
 app.use('/dashboard', authenticateUser, dashboardRoutes);

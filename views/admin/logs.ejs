@@ -1,4 +1,4 @@
-<%- include('../layout') %>
+<%- include('../header') %>
 
 <div class="row">
     <div class="col-12">
@@ -56,7 +56,7 @@
                             </thead>
                             <tbody>
                                 <% logs.forEach(log => { %>
-                                    <tr>
+                                                                        <tr>
                                         <td>
                                             <small class="text-nowrap">
                                                 <%= new Date(log.timestamp).toLocaleString() %>
@@ -75,38 +75,16 @@
                                             <% if (log.username) { %>
                                                 <span class="badge bg-secondary"><%= log.username %></span>
                                             <% } else { %>
-                                                <span class="text-muted">-</span>
+                                                <span class="text-muted">System</span>
                                             <% } %>
                                         </td>
                                         <td>
                                             <%= log.message %>
-                                            <% if (log.additional_data_parsed && Object.keys(log.additional_data_parsed).length > 0) { %>
-                                                <button class="btn btn-sm btn-outline-secondary ms-2" 
-                                                        type="button" 
-                                                        data-bs-toggle="collapse" 
-                                                        data-bs-target="#details-<%= log.id %>" 
-                                                        aria-expanded="false">
-                                                    <i class="fas fa-info-circle"></i>
-                                                </button>
-                                                <div class="collapse mt-2" id="details-<%= log.id %>">
-                                                    <div class="card card-body bg-light">
-                                                        <small>
-                                                            <% Object.keys(log.additional_data_parsed).forEach(key => { %>
-                                                                <% if (key !== 'username' && key !== 'ip') { %>
-                                                                    <strong><%= key %>:</strong> <%= JSON.stringify(log.additional_data_parsed[key]) %><br>
-                                                                <% } %>
-                                                            <% }) %>
-                                                        </small>
-                                                    </div>
-                                                </div>
-                                            <% } %>
                                         </td>
                                         <td>
-                                            <% if (log.ip_address) { %>
-                                                <small class="font-monospace"><%= log.ip_address %></small>
-                                            <% } else { %>
-                                                <span class="text-muted">-</span>
-                                            <% } %>
+                                            <small class="text-muted">
+                                                <%= log.ip_address || 'N/A' %>
+                                            </small>
                                         </td>
                                     </tr>
                                 <% }) %>
@@ -146,3 +124,5 @@
         </div>
     </div>
 </div>
+
+<%- include('../footer') %>
