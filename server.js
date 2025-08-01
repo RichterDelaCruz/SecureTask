@@ -18,6 +18,8 @@ const accountRoutes = require('./routes/account');
 const resetRoutes = require('./routes/reset');
 const checkSessionTimeout = require('./middleware/sessionTimeout');
 const noCache = require('./middleware/noCache');
+console.log('typeof noCache:', typeof noCache);
+console.dir(noCache);
 const isProduction = process.env.NODE_ENV === 'production';
 
 // Import middleware
