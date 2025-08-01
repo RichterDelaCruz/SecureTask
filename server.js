@@ -18,6 +18,7 @@ const { authenticateUser, authorizeRole } = require('./middleware/auth');
 const { addSecurityHeaders } = require('./middleware/authorization');
 const { validateSessionIntegrity, sensitiveOperationLimiter } = require('./middleware/authz-audit');
 const { securityLogger, setDbHelpers } = require('./utils/logger');
+const { validateRequest } = require('./utils/validation');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -66,9 +67,16 @@ app.use('/login', loginLimiter);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Body parsing middleware
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// Body parsing middleware with strict limits
+app.use(express.urlencoded({ 
+    extended: true,
+    limit: '10mb',
+    parameterLimit: 100 // Limit number of parameters  
+}));
+app.use(express.json({
+    limit: '1mb',
+    strict: true // Only accept arrays and objects
+}));
 
 // Static files
 app.use(express.static(path.join(__dirname, 'public')));
@@ -93,6 +101,15 @@ setDbHelpers(dbHelpers);
 
 // Apply session integrity validation to all routes
 app.use(validateSessionIntegrity);
+
+// Apply comprehensive request validation
+app.use(validateRequest({
+    maxBodySize: 10 * 1024 * 1024, // 10MB
+    maxParams: 100,
+    allowedMethods: ['GET', 'POST', 'PUT', 'DELETE'],
+    requireHttps: false, // Set to true in production
+    checkContentType: true
+}));
 
 // Favicon route to prevent 404 warnings
 app.get('/favicon.ico', (req, res) => {

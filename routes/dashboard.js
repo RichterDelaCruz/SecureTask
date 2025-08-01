@@ -1,7 +1,13 @@
 const express = require('express');
 const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
-const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
+const { 
+    validationSets, 
+    handleValidationErrors, 
+    injectValidationData, 
+    sanitize, 
+    VALIDATION_LIMITS 
+} = require('../utils/validation');
 const { authorizeRole } = require('../middleware/auth');
 const { 
     requirePermission, 
@@ -247,19 +253,34 @@ router.post('/create-task',
 // Update task status (Employee only)
 router.post('/update-task-status',
     requirePermission('task:update-status-assigned'),
+    validationSets.updateTaskStatus,
+    handleValidationErrors,
     requireResourceOwnership('task', getTaskAssigneeId),
     (req, res) => {
         const { taskId, status } = req.body;
         const user = req.session.user;
 
-        // Validate status
-        if (!['Pending', 'Completed'].includes(status)) {
-            securityLogger.warn('Invalid task status update attempt', {
+        // Additional server-side validation (already validated by express-validator)
+        // This is a defense-in-depth approach
+        try {
+            const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
+            const validatedStatus = sanitize.validateEnum(status, ['Pending', 'Completed'], 'Task status');
+            
+            securityLogger.info('Task status update request', {
                 username: user.username,
-                taskId,
-                status
+                taskId: validatedTaskId,
+                newStatus: validatedStatus,
+                ip: req.ip
             });
-            req.session.validationErrors = [{ msg: 'Invalid task status.' }];
+        } catch (validationError) {
+            securityLogger.warn('Task status validation failed after express-validator', {
+                username: user.username,
+                error: validationError.message,
+                taskId,
+                status,
+                ip: req.ip
+            });
+            req.session.validationErrors = [{ msg: validationError.message }];
             return res.redirect('/dashboard');
         }
 
@@ -301,18 +322,34 @@ router.post('/update-task-status',
 // Reassign task (Project Manager only)
 router.post('/reassign-task',
     requirePermission('task:reassign-created'),
+    validationSets.reassignTask,
+    handleValidationErrors,
     requireResourceOwnership('task', getTaskCreatorId),
     validateBusinessLogic(canAssignTaskToUser),
     (req, res) => {
         const { taskId, newAssignedTo } = req.body;
         const user = req.session.user;
 
-        if (!taskId || isNaN(parseInt(taskId))) {
-            securityLogger.warn('Invalid task reassignment attempt', {
+        // Additional server-side validation (defense in depth)
+        try {
+            const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
+            const validatedNewAssignedTo = sanitize.validateInteger(newAssignedTo, VALIDATION_LIMITS.USER_ID.min, VALIDATION_LIMITS.USER_ID.max);
+            
+            securityLogger.info('Task reassignment request', {
                 username: user.username,
-                taskId
+                taskId: validatedTaskId,
+                newAssignedTo: validatedNewAssignedTo,
+                ip: req.ip
             });
-            req.session.validationErrors = [{ msg: 'Invalid task ID.' }];
+        } catch (validationError) {
+            securityLogger.warn('Task reassignment validation failed after express-validator', {
+                username: user.username,
+                error: validationError.message,
+                taskId,
+                newAssignedTo,
+                ip: req.ip
+            });
+            req.session.validationErrors = [{ msg: validationError.message }];
             return res.redirect('/dashboard');
         }
 
@@ -377,18 +414,31 @@ router.post('/reassign-task',
 // Delete task (Project Manager only)
 router.post('/delete-task',
     requirePermission('task:delete-created'),
+    validationSets.deleteTask,
+    handleValidationErrors,
     sensitiveOperationLimiter('delete-task', 5, 60 * 60 * 1000), // 5 deletions per hour
     requireResourceOwnership('task', getTaskCreatorId),
     (req, res) => {
         const { taskId } = req.body;
         const user = req.session.user;
 
-        if (!taskId || isNaN(parseInt(taskId))) {
-            securityLogger.warn('Invalid task deletion attempt', {
+        // Additional server-side validation (defense in depth)
+        try {
+            const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
+            
+            securityLogger.info('Task deletion request', {
                 username: user.username,
-                taskId
+                taskId: validatedTaskId,
+                ip: req.ip
             });
-            req.session.validationErrors = [{ msg: 'Invalid task ID.' }];
+        } catch (validationError) {
+            securityLogger.warn('Task deletion validation failed after express-validator', {
+                username: user.username,
+                error: validationError.message,
+                taskId,
+                ip: req.ip
+            });
+            req.session.validationErrors = [{ msg: validationError.message }];
             return res.redirect('/dashboard');
         }
 

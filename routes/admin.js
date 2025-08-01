@@ -2,7 +2,13 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
-const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
+const { 
+    validationSets, 
+    handleValidationErrors, 
+    injectValidationData, 
+    sanitize, 
+    VALIDATION_LIMITS 
+} = require('../utils/validation');
 const { 
     requirePermission, 
     validateBusinessLogic, 
@@ -159,20 +165,31 @@ router.post('/create-manager',
 // Delete Project Manager account
 router.post('/delete-manager', 
     requirePermission('admin:manage-managers'),
+    validationSets.deleteManager,
+    handleValidationErrors,
     sensitiveOperationLimiter('delete-manager', 2, 60 * 60 * 1000), // 2 attempts per hour
     validateBusinessLogic(canDeleteManager),
     (req, res) => {
         const { managerId } = req.body;
         const user = req.session.user;
 
-        if (!managerId || isNaN(parseInt(managerId))) {
-            securityLogger.warn('Invalid manager deletion attempt', {
+        // Additional server-side validation (defense in depth)
+        try {
+            const validatedManagerId = sanitize.validateInteger(managerId, VALIDATION_LIMITS.USER_ID.min, VALIDATION_LIMITS.USER_ID.max);
+            
+            securityLogger.info('Manager deletion request', {
                 username: user.username,
-                managerId,
-                ip: req.ip,
-                timestamp: new Date().toISOString()
+                managerId: validatedManagerId,
+                ip: req.ip
             });
-            req.session.validationErrors = [{ msg: 'Invalid manager ID.' }];
+        } catch (validationError) {
+            securityLogger.warn('Manager deletion validation failed after express-validator', {
+                username: user.username,
+                error: validationError.message,
+                managerId,
+                ip: req.ip
+            });
+            req.session.validationErrors = [{ msg: validationError.message }];
             return res.redirect('/admin/managers');
         }
 

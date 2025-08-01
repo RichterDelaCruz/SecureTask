@@ -1,5 +1,6 @@
 const { securityLogger } = require('../utils/logger');
 const { dbHelpers } = require('../database/init');
+const { sanitize, VALIDATION_LIMITS } = require('../utils/validation');
 
 // Centralized permissions mapping
 const PERMISSIONS = {
@@ -156,29 +157,42 @@ const requireResourceOwnership = (resourceType, getResourceOwner) => {
     };
 };
 
-// Task ownership helpers
+// Task ownership helpers with enhanced validation
 const getTaskCreatorId = (req) => {
     return new Promise((resolve, reject) => {
         const taskId = req.body.taskId || req.params.taskId;
         
-        if (!taskId || isNaN(parseInt(taskId))) {
-            reject(new Error('Invalid task ID'));
-            return;
-        }
-
-        dbHelpers.db.get(
-            "SELECT created_by FROM tasks WHERE id = ?",
-            [taskId],
-            (err, row) => {
-                if (err) {
-                    reject(err);
-                } else if (!row) {
-                    reject(new Error('Task not found'));
-                } else {
-                    resolve(row.created_by);
+        // Strict validation of task ID
+        try {
+            const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
+            
+            dbHelpers.db.get(
+                "SELECT created_by FROM tasks WHERE id = ?",
+                [validatedTaskId],
+                (err, row) => {
+                    if (err) {
+                        securityLogger.error('Database error checking task creator', {
+                            taskId: validatedTaskId,
+                            error: err.message
+                        });
+                        reject(err);
+                    } else if (!row) {
+                        securityLogger.warn('Task not found during ownership check', {
+                            taskId: validatedTaskId
+                        });
+                        reject(new Error('Task not found'));
+                    } else {
+                        resolve(row.created_by);
+                    }
                 }
-            }
-        );
+            );
+        } catch (validationError) {
+            securityLogger.warn('Invalid task ID in ownership check', {
+                taskId,
+                error: validationError.message
+            });
+            reject(validationError);
+        }
     });
 };
 
@@ -186,38 +200,55 @@ const getTaskAssigneeId = (req) => {
     return new Promise((resolve, reject) => {
         const taskId = req.body.taskId || req.params.taskId;
         
-        if (!taskId || isNaN(parseInt(taskId))) {
-            reject(new Error('Invalid task ID'));
-            return;
-        }
-
-        dbHelpers.db.get(
-            "SELECT assigned_to FROM tasks WHERE id = ?",
-            [taskId],
-            (err, row) => {
-                if (err) {
-                    reject(err);
-                } else if (!row) {
-                    reject(new Error('Task not found'));
-                } else {
-                    resolve(row.assigned_to);
+        // Strict validation of task ID
+        try {
+            const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
+            
+            dbHelpers.db.get(
+                "SELECT assigned_to FROM tasks WHERE id = ?",
+                [validatedTaskId],
+                (err, row) => {
+                    if (err) {
+                        securityLogger.error('Database error checking task assignee', {
+                            taskId: validatedTaskId,
+                            error: err.message
+                        });
+                        reject(err);
+                    } else if (!row) {
+                        securityLogger.warn('Task not found during assignee check', {
+                            taskId: validatedTaskId
+                        });
+                        reject(new Error('Task not found'));
+                    } else {
+                        resolve(row.assigned_to);
+                    }
                 }
-            }
-        );
+            );
+        } catch (validationError) {
+            securityLogger.warn('Invalid task ID in assignee check', {
+                taskId,
+                error: validationError.message
+            });
+            reject(validationError);
+        }
     });
 };
 
-// User ID validation helper
+// User ID validation helper with enhanced validation
 const validateTargetUserId = (req) => {
     return new Promise((resolve, reject) => {
         const targetUserId = req.body.userId || req.params.userId || req.body.managerId;
         
-        if (!targetUserId || isNaN(parseInt(targetUserId))) {
-            reject(new Error('Invalid user ID'));
-            return;
+        try {
+            const validatedUserId = sanitize.validateInteger(targetUserId, VALIDATION_LIMITS.USER_ID.min, VALIDATION_LIMITS.USER_ID.max);
+            resolve(validatedUserId);
+        } catch (validationError) {
+            securityLogger.warn('Invalid user ID in validation', {
+                targetUserId,
+                error: validationError.message
+            });
+            reject(validationError);
         }
-
-        resolve(parseInt(targetUserId));
     });
 };
 
