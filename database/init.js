@@ -9,14 +9,16 @@ const db = new sqlite3.Database(dbPath);
 db.serialize(() => {
     // Users table
     db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password_hash TEXT NOT NULL,
-        role TEXT NOT NULL CHECK (role IN ('Administrator', 'Project Manager', 'Employee')),
-        failed_attempts INTEGER DEFAULT 0,
-        locked_until DATETIME NULL,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    role TEXT NOT NULL CHECK (role IN ('Administrator', 'Project Manager', 'Employee')),
+    failed_attempts INTEGER DEFAULT 0,
+    locked_until DATETIME NULL,
+    reset_token TEXT,
+    reset_token_expiry INTEGER,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
     // Tasks table
@@ -79,6 +81,15 @@ db.serialize(() => {
 
 // Database helper functions
 const dbHelpers = {
+
+    getUserByResetToken: (token, callback) => {
+        db.get(
+            'SELECT * FROM users WHERE reset_token = ?',
+            [token],
+            callback
+        );
+    },
+
     // User operations
     createUser: (username, passwordHash, role, callback) => {
         db.run(
@@ -200,6 +211,9 @@ const dbHelpers = {
             callback
         );
     }
+
+    
+    
 };
 
 module.exports = { db, dbHelpers };

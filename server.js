@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
 const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
+const resetRoutes = require('./routes/reset');
 
 // Import middleware
 const { authenticateUser, authorizeRole } = require('./middleware/auth');
@@ -54,6 +55,7 @@ const loginLimiter = rateLimit({
 
 app.use(limiter);
 app.use('/login', loginLimiter);
+app.use('/', resetRoutes);
 
 // View engine setup
 app.set('view engine', 'ejs');
@@ -130,6 +132,8 @@ app.use((req, res, next) => {
         user: req.session.user 
     });
 });
+
+
 
 app.use((err, req, res, next) => {
     if (err.code === 'EBADCSRFTOKEN') {
