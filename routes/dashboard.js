@@ -3,6 +3,15 @@ const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
 const { authorizeRole } = require('../middleware/auth');
+const { 
+    requirePermission, 
+    requireResourceOwnership, 
+    getTaskCreatorId, 
+    getTaskAssigneeId,
+    validateBusinessLogic, 
+    canAssignTaskToUser 
+} = require('../middleware/authorization');
+const { sensitiveOperationLimiter } = require('../middleware/authz-audit');
 
 const router = express.Router();
 
@@ -10,8 +19,22 @@ const router = express.Router();
 router.use(injectValidationData);
 
 // Main dashboard route
-router.get('/', (req, res) => {
+router.get('/', 
+    requirePermission('account:view-profile'), // Base permission for accessing dashboard
+    (req, res) => {
     const user = req.session.user;
+    
+    // Validate user role is still valid
+    if (!user.role || !['Administrator', 'Project Manager', 'Employee'].includes(user.role)) {
+        securityLogger.error('Invalid user role accessing dashboard', {
+            username: user.username,
+            role: user.role,
+            ip: req.ip,
+            timestamp: new Date().toISOString()
+        });
+        req.session.destroy();
+        return res.redirect('/login');
+    }
     
     switch (user.role) {
         case 'Administrator':
@@ -20,7 +43,9 @@ router.get('/', (req, res) => {
                 if (err) {
                     securityLogger.error('Failed to fetch user counts for admin dashboard', {
                         username: user.username,
-                        error: err.message
+                        error: err.message,
+                        ip: req.ip,
+                        timestamp: new Date().toISOString()
                     });
                     userCounts = [];
                 }
@@ -29,7 +54,9 @@ router.get('/', (req, res) => {
                     if (err) {
                         securityLogger.error('Failed to fetch task count for admin dashboard', {
                             username: user.username,
-                            error: err.message
+                            error: err.message,
+                            ip: req.ip,
+                            timestamp: new Date().toISOString()
                         });
                         taskCount = { count: 0 };
                     }
@@ -58,6 +85,12 @@ router.get('/', (req, res) => {
                         }
                     });
 
+                    securityLogger.info('Admin dashboard accessed', {
+                        username: user.username,
+                        ip: req.ip,
+                        timestamp: new Date().toISOString()
+                    });
+
                     res.render('dashboard/admin', {
                         title: 'Administrator Dashboard - SecureTask',
                         user: user,
@@ -73,7 +106,9 @@ router.get('/', (req, res) => {
                 if (err) {
                     securityLogger.error('Failed to fetch employees for manager dashboard', {
                         username: user.username,
-                        error: err.message
+                        error: err.message,
+                        ip: req.ip,
+                        timestamp: new Date().toISOString()
                     });
                     employees = [];
                 }
@@ -83,10 +118,20 @@ router.get('/', (req, res) => {
                     if (err) {
                         securityLogger.error('Failed to fetch manager tasks', {
                             username: user.username,
-                            error: err.message
+                            error: err.message,
+                            ip: req.ip,
+                            timestamp: new Date().toISOString()
                         });
                         tasks = [];
                     }
+
+                    securityLogger.info('Manager dashboard accessed', {
+                        username: user.username,
+                        taskCount: tasks.length,
+                        employeeCount: employees.length,
+                        ip: req.ip,
+                        timestamp: new Date().toISOString()
+                    });
 
                     res.render('dashboard/manager', {
                         title: 'Project Manager Dashboard - SecureTask',
@@ -104,10 +149,19 @@ router.get('/', (req, res) => {
                 if (err) {
                     securityLogger.error('Failed to fetch employee tasks', {
                         username: user.username,
-                        error: err.message
+                        error: err.message,
+                        ip: req.ip,
+                        timestamp: new Date().toISOString()
                     });
                     tasks = [];
                 }
+
+                securityLogger.info('Employee dashboard accessed', {
+                    username: user.username,
+                    assignedTaskCount: tasks.length,
+                    ip: req.ip,
+                    timestamp: new Date().toISOString()
+                });
 
                 res.render('dashboard/employee', {
                     title: 'Employee Dashboard - SecureTask',
@@ -120,7 +174,9 @@ router.get('/', (req, res) => {
         default:
             securityLogger.error('Unknown user role accessing dashboard', {
                 username: user.username,
-                role: user.role
+                role: user.role,
+                ip: req.ip,
+                timestamp: new Date().toISOString()
             });
             res.status(403).render('error', {
                 message: 'Access denied. Invalid user role.',
@@ -131,9 +187,11 @@ router.get('/', (req, res) => {
 
 // Create new task (Project Manager only)
 router.post('/create-task',
-    authorizeRole(['Project Manager']),
+    requirePermission('task:create'),
+    sensitiveOperationLimiter('create-task', 10, 60 * 60 * 1000), // 10 tasks per hour
     validationSets.createTask,
     handleValidationErrors,
+    validateBusinessLogic(canAssignTaskToUser),
     (req, res) => {
         const { title, description, assignedTo, priority } = req.body;
         const user = req.session.user;
@@ -188,7 +246,8 @@ router.post('/create-task',
 
 // Update task status (Employee only)
 router.post('/update-task-status',
-    authorizeRole(['Employee']),
+    requirePermission('task:update-status-assigned'),
+    requireResourceOwnership('task', getTaskAssigneeId),
     (req, res) => {
         const { taskId, status } = req.body;
         const user = req.session.user;
@@ -241,7 +300,9 @@ router.post('/update-task-status',
 
 // Reassign task (Project Manager only)
 router.post('/reassign-task',
-    authorizeRole(['Project Manager']),
+    requirePermission('task:reassign-created'),
+    requireResourceOwnership('task', getTaskCreatorId),
+    validateBusinessLogic(canAssignTaskToUser),
     (req, res) => {
         const { taskId, newAssignedTo } = req.body;
         const user = req.session.user;
@@ -315,7 +376,9 @@ router.post('/reassign-task',
 
 // Delete task (Project Manager only)
 router.post('/delete-task',
-    authorizeRole(['Project Manager']),
+    requirePermission('task:delete-created'),
+    sensitiveOperationLimiter('delete-task', 5, 60 * 60 * 1000), // 5 deletions per hour
+    requireResourceOwnership('task', getTaskCreatorId),
     (req, res) => {
         const { taskId } = req.body;
         const user = req.session.user;

@@ -15,6 +15,8 @@ const accountRoutes = require('./routes/account');
 
 // Import middleware
 const { authenticateUser, authorizeRole } = require('./middleware/auth');
+const { addSecurityHeaders } = require('./middleware/authorization');
+const { validateSessionIntegrity, sensitiveOperationLimiter } = require('./middleware/authz-audit');
 const { securityLogger, setDbHelpers } = require('./utils/logger');
 
 const app = express();
@@ -31,6 +33,9 @@ app.use(helmet({
         },
     },
 }));
+
+// Additional security headers
+app.use(addSecurityHeaders);
 
 // Rate limiting
 const limiter = rateLimit({
@@ -85,6 +90,9 @@ const { db, dbHelpers } = require('./database/init');
 
 // Set database helpers for logger
 setDbHelpers(dbHelpers);
+
+// Apply session integrity validation to all routes
+app.use(validateSessionIntegrity);
 
 // Favicon route to prevent 404 warnings
 app.get('/favicon.ico', (req, res) => {

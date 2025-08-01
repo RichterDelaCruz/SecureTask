@@ -3,6 +3,8 @@ const bcrypt = require('bcrypt');
 const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
+const { requirePermission } = require('../middleware/authorization');
+const { sensitiveOperationLimiter } = require('../middleware/authz-audit');
 
 const router = express.Router();
 
@@ -10,7 +12,9 @@ const router = express.Router();
 router.use(injectValidationData);
 
 // Change password page
-router.get('/change-password', (req, res) => {
+router.get('/change-password', 
+    requirePermission('account:view-profile'),
+    (req, res) => {
     const user = req.session.user;
     const successMessage = req.session.successMessage;
     delete req.session.successMessage;
@@ -24,6 +28,8 @@ router.get('/change-password', (req, res) => {
 
 // Change password form handler
 router.post('/change-password',
+    requirePermission('account:change-password'),
+    sensitiveOperationLimiter('password-change', 5, 30 * 60 * 1000), // 5 attempts per 30 minutes
     validationSets.changePassword,
     handleValidationErrors,
     async (req, res) => {
