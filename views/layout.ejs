@@ -106,6 +106,12 @@
         </div>
     </nav>
 
+    <% if (locals.error) { %>
+    <div class="alert alert-danger text-center py-2">
+        <%= error %>
+    </div>
+    <% } %>
+
     <!-- Main Content -->
     <main class="container mt-4">
         <!-- Flash Messages -->

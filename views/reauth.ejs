@@ -1,0 +1,20 @@
+<%- include('layout') %>
+
+<div class="container mt-5">
+  <h2>Re-authenticate</h2>
+  <form method="POST" action="/re-auth">
+    <%- include('partials/csrf') %>
+
+    <div class="mb-3">
+      <label for="username">Username</label>
+      <input type="text" class="form-control" name="username" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="password">Password</label>
+      <input type="password" class="form-control" name="password" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Continue</button>
+  </form>
+</div>
