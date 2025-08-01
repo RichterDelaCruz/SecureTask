@@ -38,7 +38,19 @@ const validationRules = {
 
     assignedTo: body('assignedTo')
         .isInt({ min: 1 })
-        .withMessage('Please select a valid employee')
+        .withMessage('Please select a valid employee'),
+
+    taskId: body('taskId')
+        .isInt({ min: 1 })
+        .withMessage('Invalid task ID'),
+
+    managerId: body('managerId')
+        .isInt({ min: 1 })
+        .withMessage('Invalid manager ID'),
+
+    status: body('status')
+        .isIn(['Pending', 'Completed'])
+        .withMessage('Invalid status value')
 };
 
 // Validation rule sets for different forms
@@ -69,6 +81,19 @@ const validationSets = {
     createManager: [
         validationRules.username,
         validationRules.password
+    ],
+
+    updateTaskStatus: [
+        validationRules.taskId,
+        validationRules.status
+    ],
+
+    deleteTask: [
+        validationRules.taskId
+    ],
+
+    deleteManager: [
+        validationRules.managerId
     ]
 };
 
@@ -79,7 +104,7 @@ const handleValidationErrors = (req, res, next) => {
         // Store errors in session to display after redirect
         req.session.validationErrors = errors.array();
         req.session.formData = req.body;
-        
+
         // Determine redirect location based on the original URL
         const referer = req.get('Referer') || '/';
         return res.redirect(referer);
@@ -91,11 +116,11 @@ const handleValidationErrors = (req, res, next) => {
 const injectValidationData = (req, res, next) => {
     res.locals.validationErrors = req.session.validationErrors || [];
     res.locals.formData = req.session.formData || {};
-    
+
     // Clear session data after using it
     delete req.session.validationErrors;
     delete req.session.formData;
-    
+
     next();
 };
 
@@ -115,13 +140,13 @@ const sanitize = {
         if (!input || typeof input !== 'string') {
             return '';
         }
-        
+
         input = input.trim();
-        
+
         if (input.length > maxLength) {
             throw new Error(`Input exceeds maximum length of ${maxLength} characters`);
         }
-        
+
         return sanitize.rejectDangerousChars(input);
     }
 };
