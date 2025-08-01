@@ -1,7 +1,10 @@
+
+const helmet = require('helmet');
+const csurf = require('csurf');
+
 const express = require('express');
 const session = require('express-session');
 const path = require('path');
-const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const bcrypt = require('bcrypt');
 const sqlite3 = require('sqlite3').verbose();
@@ -75,6 +78,16 @@ app.use(session({
     }
 }));
 
+// CSRF protection
+app.use(csurf());
+
+// Make CSRF token available in all views
+app.use((req, res, next) => {
+    res.locals.csrfToken = req.csrfToken();
+    next();
+});
+
+
 // Initialize database
 const { db, dbHelpers } = require('./database/init');
 
@@ -119,20 +132,36 @@ app.use((req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-    securityLogger.error('Application error', { 
-        error: err.message, 
-        stack: err.stack,
-        url: req.url,
-        method: req.method,
-        ip: req.ip,
-        user: req.session.user?.username
-    });
-    
-    res.status(500).render('error', { 
-        message: 'Internal server error', 
-        user: req.session.user 
-    });
+    if (err.code === 'EBADCSRFTOKEN') {
+        securityLogger.warn('Invalid CSRF token', {
+            url: req.url,
+            ip: req.ip,
+            user: req.session.user?.username || 'unknown'
+        });
+
+        req.session.destroy(() => {
+            res.status(403).render('error', {
+                message: 'Invalid or expired form submission. Please log in again.',
+                user: null
+            });
+        });
+    } else {
+        securityLogger.error('Application error', {
+            error: err.message,
+            stack: err.stack,
+            url: req.url,
+            method: req.method,
+            ip: req.ip,
+            user: req.session.user?.username
+        });
+
+        res.status(500).render('error', {
+            message: 'Internal server error',
+            user: req.session.user
+        });
+    }
 });
+
 
 app.listen(PORT, () => {
     console.log(`SecureTask server running on port ${PORT}`);
