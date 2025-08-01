@@ -1,5 +1,24 @@
 <%- include('../header') %>
 
+<!-- Flash Messages -->
+<% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <ul class="mb-0">
+            <% validationErrors.forEach(error => { %>
+                <li><%= error.msg %></li>
+            <% }) %>
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<% } %>
+
+<% if (typeof successMessage !== 'undefined' && successMessage) { %>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <%= successMessage %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<% } %>
+
 <div class="row">
     <div class="col-12">
         <h1 class="h2 mb-4">
@@ -34,8 +53,6 @@
                             <thead class="table-light">
                                 <tr>
                                     <th>Task</th>
-                                    <th>Priority</th>
-                                    <th>Assigned By</th>
                                     <th>Status</th>
                                     <th>Created</th>
                                     <th>Actions</th>
@@ -49,22 +66,10 @@
                                             <br><small class="text-muted"><%= task.description %></small>
                                         </td>
                                         <td>
-                                            <% if (task.priority === 'High') { %>
-                                                <span class="badge bg-danger">High</span>
-                                            <% } else if (task.priority === 'Medium') { %>
-                                                <span class="badge bg-warning">Medium</span>
-                                            <% } else { %>
-                                                <span class="badge bg-info">Low</span>
-                                            <% } %>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-secondary"><%= task.created_by_username %></span>
-                                        </td>
-                                        <td>
-                                            <% if (task.completed) { %>
+                                            <% if (task.status === 'Completed') { %>
                                                 <span class="badge bg-success">Completed</span>
                                             <% } else { %>
-                                                <span class="badge bg-primary">In Progress</span>
+                                                <span class="badge bg-primary">Pending</span>
                                             <% } %>
                                         </td>
                                         <td>
@@ -73,13 +78,14 @@
                                             </small>
                                         </td>
                                         <td>
-                                            <% if (!task.completed) { %>
-                                                <form method="POST" action="/dashboard/complete-task" class="d-inline">
+                                            <% if (task.status === 'Pending') { %>
+                                                <form method="POST" action="/dashboard/update-task-status" class="d-inline">
                                                     <input type="hidden" name="taskId" value="<%= task.id %>">
+                                                    <input type="hidden" name="status" value="Completed">
                                                     <button type="submit" 
                                                             class="btn btn-sm btn-success" 
                                                             title="Mark as completed">
-                                                        <i class="fas fa-check"></i>
+                                                        <i class="fas fa-check"></i> Complete
                                                     </button>
                                                 </form>
                                             <% } else { %>
@@ -114,16 +120,18 @@
                         <small class="text-muted">Total Tasks</small>
                     </div>
                     <div class="col-md-3">
-                        <div class="h4 text-success"><%= tasks.filter(t => t.completed).length %></div>
+                        <div class="h4 text-success"><%= tasks.filter(t => t.status === 'Completed').length %></div>
                         <small class="text-muted">Completed</small>
                     </div>
                     <div class="col-md-3">
-                        <div class="h4 text-warning"><%= tasks.filter(t => !t.completed).length %></div>
-                        <small class="text-muted">In Progress</small>
+                        <div class="h4 text-warning"><%= tasks.filter(t => t.status === 'Pending').length %></div>
+                        <small class="text-muted">Pending</small>
                     </div>
                     <div class="col-md-3">
-                        <div class="h4 text-danger"><%= tasks.filter(t => t.priority === 'High' && !t.completed).length %></div>
-                        <small class="text-muted">High Priority</small>
+                        <div class="h4 text-info">
+                            <%= tasks.length > 0 ? Math.round((tasks.filter(t => t.status === 'Completed').length / tasks.length) * 100) : 0 %>%
+                        </div>
+                        <small class="text-muted">Completion Rate</small>
                     </div>
                 </div>
             </div>

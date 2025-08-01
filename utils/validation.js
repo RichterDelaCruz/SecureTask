@@ -38,7 +38,11 @@ const validationRules = {
 
     assignedTo: body('assignedTo')
         .isInt({ min: 1 })
-        .withMessage('Please select a valid employee')
+        .withMessage('Please select a valid employee'),
+
+    priority: body('priority')
+        .isIn(['Low', 'Medium', 'High'])
+        .withMessage('Please select a valid priority level')
 };
 
 // Validation rule sets for different forms
@@ -63,7 +67,8 @@ const validationSets = {
     createTask: [
         validationRules.taskTitle,
         validationRules.taskDescription,
-        validationRules.assignedTo
+        validationRules.assignedTo,
+        validationRules.priority
     ],
 
     createManager: [

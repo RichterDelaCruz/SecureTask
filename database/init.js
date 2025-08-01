@@ -24,6 +24,7 @@ db.serialize(() => {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
         description TEXT,
+        priority TEXT DEFAULT 'Medium' CHECK (priority IN ('Low', 'Medium', 'High')),
         status TEXT DEFAULT 'Pending' CHECK (status IN ('Pending', 'Completed')),
         created_by INTEGER NOT NULL,
         assigned_to INTEGER NOT NULL,
@@ -143,10 +144,10 @@ const dbHelpers = {
     },
 
     // Task operations
-    createTask: (title, description, createdBy, assignedTo, callback) => {
+    createTask: (title, description, priority, createdBy, assignedTo, callback) => {
         db.run(
-            "INSERT INTO tasks (title, description, created_by, assigned_to) VALUES (?, ?, ?, ?)",
-            [title, description, createdBy, assignedTo],
+            "INSERT INTO tasks (title, description, priority, created_by, assigned_to) VALUES (?, ?, ?, ?, ?)",
+            [title, description, priority, createdBy, assignedTo],
             callback
         );
     },
@@ -162,17 +163,27 @@ const dbHelpers = {
     },
 
     getTasksByAssignee: (assigneeId, callback) => {
-        db.all(
-            "SELECT * FROM tasks WHERE assigned_to = ? ORDER BY created_at DESC",
-            [assigneeId],
-            callback
-        );
+        db.all(`
+            SELECT t.*, u.username as created_by_username 
+            FROM tasks t 
+            JOIN users u ON t.created_by = u.id 
+            WHERE t.assigned_to = ? 
+            ORDER BY t.created_at DESC
+        `, [assigneeId], callback);
     },
 
     updateTaskStatus: (taskId, status, assigneeId, callback) => {
         db.run(
             "UPDATE tasks SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND assigned_to = ?",
             [status, taskId, assigneeId],
+            callback
+        );
+    },
+
+    reassignTask: (taskId, newAssigneeId, creatorId, callback) => {
+        db.run(
+            "UPDATE tasks SET assigned_to = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND created_by = ?",
+            [newAssigneeId, taskId, creatorId],
             callback
         );
     },

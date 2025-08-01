@@ -89,7 +89,7 @@ router.post('/create-task',
     validationSets.createTask,
     handleValidationErrors,
     (req, res) => {
-        const { title, description, assignedTo } = req.body;
+        const { title, description, assignedTo, priority } = req.body;
         const user = req.session.user;
 
         // Verify that the assigned user is actually an Employee
@@ -115,7 +115,7 @@ router.post('/create-task',
             }
 
             // Create the task
-            dbHelpers.createTask(title, description, user.id, assignedTo, function(err) {
+            dbHelpers.createTask(title, description, priority, user.id, assignedTo, function(err) {
                 if (err) {
                     securityLogger.error('Failed to create task', {
                         username: user.username,
@@ -189,6 +189,80 @@ router.post('/update-task-status',
 
             req.session.successMessage = 'Task status updated successfully!';
             res.redirect('/dashboard');
+        });
+    }
+);
+
+// Reassign task (Project Manager only)
+router.post('/reassign-task',
+    authorizeRole(['Project Manager']),
+    (req, res) => {
+        const { taskId, newAssignedTo } = req.body;
+        const user = req.session.user;
+
+        if (!taskId || isNaN(parseInt(taskId))) {
+            securityLogger.warn('Invalid task reassignment attempt', {
+                username: user.username,
+                taskId
+            });
+            req.session.validationErrors = [{ msg: 'Invalid task ID.' }];
+            return res.redirect('/dashboard');
+        }
+
+        // Verify that the new assignee is actually an Employee
+        dbHelpers.getUserById(newAssignedTo, (err, assignedUser) => {
+            if (err) {
+                securityLogger.error('Database error checking new assignee', {
+                    username: user.username,
+                    error: err.message,
+                    newAssignedTo
+                });
+                req.session.validationErrors = [{ msg: 'Failed to reassign task. Please try again.' }];
+                return res.redirect('/dashboard');
+            }
+
+            if (!assignedUser || assignedUser.role !== 'Employee') {
+                securityLogger.warn('Attempt to reassign task to invalid user', {
+                    username: user.username,
+                    newAssignedTo,
+                    assignedUserRole: assignedUser?.role
+                });
+                req.session.validationErrors = [{ msg: 'Please select a valid employee.' }];
+                return res.redirect('/dashboard');
+            }
+
+            // Reassign the task (only if it was created by this user)
+            dbHelpers.reassignTask(taskId, newAssignedTo, user.id, function(err) {
+                if (err) {
+                    securityLogger.error('Failed to reassign task', {
+                        username: user.username,
+                        error: err.message,
+                        taskId,
+                        newAssignedTo
+                    });
+                    req.session.validationErrors = [{ msg: 'Failed to reassign task. Please try again.' }];
+                    return res.redirect('/dashboard');
+                }
+
+                if (this.changes === 0) {
+                    securityLogger.warn('Unauthorized task reassignment attempt', {
+                        username: user.username,
+                        taskId,
+                        newAssignedTo
+                    });
+                    req.session.validationErrors = [{ msg: 'You can only reassign tasks you created.' }];
+                    return res.redirect('/dashboard');
+                }
+
+                securityLogger.info('Task reassigned', {
+                    username: user.username,
+                    taskId,
+                    newAssignee: assignedUser.username
+                });
+
+                req.session.successMessage = 'Task reassigned successfully!';
+                res.redirect('/dashboard');
+            });
         });
     }
 );
