@@ -16,6 +16,7 @@ const dashboardRoutes = require('./routes/dashboard');
 const adminRoutes = require('./routes/admin');
 const accountRoutes = require('./routes/account');
 const resetRoutes = require('./routes/reset');
+const checkSessionTimeout = require('./middleware/sessionTimeout');
 
 // Import middleware
 const { authenticateUser, authorizeRole } = require('./middleware/auth');
@@ -79,6 +80,9 @@ app.use(session({
         maxAge: 1000 * 60 * 60 * 24 // 24 hours
     }
 }));
+
+// 👇 Add session timeout middleware right after session
+app.use(checkSessionTimeout);
 
 // CSRF protection
 app.use(csurf());
