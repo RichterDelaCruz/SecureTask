@@ -5,8 +5,8 @@ const VALIDATION_PATTERNS = {
     // Username: 3-20 chars, alphanumeric and underscore only
     USERNAME: /^[a-zA-Z0-9_]{3,20}$/,
     
-    // Password: 8-128 chars, must contain uppercase, lowercase, number, special char
-    PASSWORD: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#+\-_=[\]{}|\\:";'<>?,./])[A-Za-z\d@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]{8,128}$/,
+    // Password: 6-128 chars, must contain at least one letter and one number
+    PASSWORD: /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]{6,128}$/,
     
     // Task priority levels (exact match)
     TASK_PRIORITY: /^(Low|Medium|High)$/,
@@ -47,8 +47,8 @@ const VALIDATION_PATTERNS = {
     // Path traversal patterns
     PATH_TRAVERSAL: /\.\.|\/\.\.|\\\.\.|\.\.\//i,
     
-    // LDAP injection patterns
-    LDAP_INJECTION: /(\*|\(|\)|\||&|!|=|<|>|~|;|,|\+|"|'|\\|\/|\x00|\x01|\x02|\x03|\x04|\x05|\x06|\x07|\x08|\x09|\x0a|\x0b|\x0c|\x0d|\x0e|\x0f)/,
+    // LDAP injection patterns (disabled - not using LDAP authentication)
+    // LDAP_INJECTION: /(\*|\(|\)|\||&|!|=|<|>|~|;|,|\+|"|'|\\|\/|\x00|\x01|\x02|\x03|\x04|\x05|\x06|\x07|\x08|\x09|\x0a|\x0b|\x0c|\x0d|\x0e|\x0f)/,
     
     // XXE patterns
     XXE_PATTERNS: /<!ENTITY|<!DOCTYPE|SYSTEM\s+["']|PUBLIC\s+["']|&[a-zA-Z0-9_]+;|\[CDATA\[/i,
@@ -60,7 +60,7 @@ const VALIDATION_PATTERNS = {
 // Validation ranges and limits
 const VALIDATION_LIMITS = {
     USERNAME: { min: 3, max: 20 },
-    PASSWORD: { min: 8, max: 128 },
+    PASSWORD: { min: 6, max: 128 },
     TASK_TITLE: { min: 1, max: 100 },
     TASK_DESCRIPTION: { min: 0, max: 500 },
     USER_ID: { min: 1, max: 2147483647 }, // Max 32-bit integer
@@ -125,10 +125,10 @@ const strictValidation = {
             throw new Error('Input contains path traversal patterns and has been rejected');
         }
         
-        // Check for LDAP injection
-        if (VALIDATION_PATTERNS.LDAP_INJECTION.test(value)) {
-            throw new Error('Input contains potential LDAP injection patterns and has been rejected');
-        }
+        // Check for LDAP injection (disabled - not using LDAP authentication)
+        // if (VALIDATION_PATTERNS.LDAP_INJECTION.test(value)) {
+        //     throw new Error('Input contains potential LDAP injection patterns and has been rejected');
+        // }
         
         // Check for XXE patterns
         if (VALIDATION_PATTERNS.XXE_PATTERNS.test(value)) {
@@ -293,7 +293,7 @@ const validationRules = {
         .custom((value) => strictValidation.rejectDangerousInput(value))
         .custom((value) => strictValidation.validateStringLength(value, VALIDATION_LIMITS.PASSWORD.min, VALIDATION_LIMITS.PASSWORD.max, 'Password'))
         .matches(VALIDATION_PATTERNS.PASSWORD)
-        .withMessage('Password must be 8-128 characters and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&#+\\-_=[]{}|\\:";\'<>?,./)')
+        .withMessage('Password must be 6-128 characters and contain at least one letter and one number')
         .custom((value) => {
             // Additional password strength validation
             const commonPasswords = ['password', '12345678', 'qwerty123', 'admin123', 'password123'];
@@ -983,33 +983,25 @@ const businessValidation = {
             throw new Error('Password is required');
         }
         
-        // Check minimum requirements
-        if (password.length < 8) {
-            throw new Error('Password must be at least 8 characters long');
+        // Check minimum requirements (relaxed)
+        if (password.length < 6) {
+            throw new Error('Password must be at least 6 characters long');
         }
         
         if (password.length > 128) {
             throw new Error('Password must not exceed 128 characters');
         }
         
-        // Check for character requirements
-        if (!/[a-z]/.test(password)) {
-            throw new Error('Password must contain at least one lowercase letter');
-        }
-        
-        if (!/[A-Z]/.test(password)) {
-            throw new Error('Password must contain at least one uppercase letter');
+        // Check for basic character requirements (relaxed)
+        if (!/[a-zA-Z]/.test(password)) {
+            throw new Error('Password must contain at least one letter');
         }
         
         if (!/\d/.test(password)) {
             throw new Error('Password must contain at least one number');
         }
         
-        if (!/[@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]/.test(password)) {
-            throw new Error('Password must contain at least one special character');
-        }
-        
-        // Check for common weak patterns
+        // Check for common weak patterns (keep this for security)
         const commonPasswords = [
             'password', '12345678', 'qwerty123', 'admin123', 'password123',
             'letmein', 'welcome', 'monkey', '1234567890', 'password1',

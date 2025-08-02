@@ -77,10 +77,9 @@ For production deployment, set the following environment variables:
 ## Security Features
 
 ### Password Requirements
-- Minimum 8 characters
-- Must contain uppercase and lowercase letters
+- Minimum 6 characters
+- Must contain at least one letter
 - Must contain at least one number
-- Must contain at least one special character (@$!%*?&)
 
 ### Account Lockout
 - Accounts are locked for 15 minutes after 5 failed login attempts

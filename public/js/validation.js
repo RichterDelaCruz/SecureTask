@@ -8,7 +8,7 @@ class ClientValidation {
     constructor() {
         this.patterns = {
             username: /^[a-zA-Z0-9_]{3,20}$/,
-            password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#+\-_=[\]{}|\\:";'<>?,./])[A-Za-z\d@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]{8,128}$/,
+            password: /^(?=.*[a-zA-Z])(?=.*\d)[A-Za-z\d@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]{6,128}$/,
             email: /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
             phone: /^[\+]?[1-9][\d]{0,15}$/,
             date: /^\d{4}-\d{2}-\d{2}$/,
@@ -18,7 +18,7 @@ class ClientValidation {
         
         this.limits = {
             username: { min: 3, max: 20 },
-            password: { min: 8, max: 128 },
+            password: { min: 6, max: 128 },
             taskTitle: { min: 1, max: 100 },
             taskDescription: { min: 0, max: 500 },
             email: { min: 5, max: 254 },
@@ -158,7 +158,7 @@ class ClientValidation {
         }
         
         if (!this.patterns.password.test(value)) {
-            throw new Error('Password must contain uppercase, lowercase, number, and special character');
+            throw new Error('Password must contain at least one letter and one number');
         }
         
         // Check for common passwords
@@ -339,14 +339,14 @@ class ClientValidation {
         let score = 0;
         
         // Length check
-        if (password.length >= 8) score++;
-        if (password.length >= 12) score++;
+        if (password.length >= 6) score++;
+        if (password.length >= 10) score++;
         
-        // Character variety
-        if (/[a-z]/.test(password)) score++;
-        if (/[A-Z]/.test(password)) score++;
+        // Character variety (relaxed requirements)
+        if (/[a-zA-Z]/.test(password)) score++;
         if (/\d/.test(password)) score++;
-        if (/[@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++; // Bonus for uppercase
+        if (/[@$!%*?&#+\-_=[\]{}|\\:";'<>?,./]/.test(password)) score++; // Bonus for special chars
         
         // Deduct for common patterns
         if (this.commonPasswords.some(common => password.toLowerCase().includes(common))) {
