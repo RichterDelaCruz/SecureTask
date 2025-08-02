@@ -16,8 +16,25 @@ db.serialize(() => {
         failed_attempts INTEGER DEFAULT 0,
         locked_until DATETIME NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        password_changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
+
+    // Add password_changed_at column to existing users table if it doesn't exist
+    db.run(`ALTER TABLE users ADD COLUMN password_changed_at DATETIME DEFAULT NULL`, (err) => {
+        if (err && !err.message.includes('duplicate column name')) {
+            console.error('Error adding password_changed_at column:', err.message);
+        } else {
+            // Update existing users to set password_changed_at to created_at if it's NULL
+            db.run(`UPDATE users SET password_changed_at = created_at WHERE password_changed_at IS NULL`, (updateErr) => {
+                if (updateErr) {
+                    console.error('Error updating existing users password_changed_at:', updateErr.message);
+                } else {
+                    console.log('Updated existing users with password_changed_at timestamps');
+                }
+            });
+        }
+    });
 
     // Tasks table
     db.run(`CREATE TABLE IF NOT EXISTS tasks (
@@ -107,7 +124,7 @@ const dbHelpers = {
 
     updateUserPassword: (userId, newPasswordHash, callback) => {
         db.run(
-            "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            "UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP, password_changed_at = CURRENT_TIMESTAMP WHERE id = ?",
             [newPasswordHash, userId],
             callback
         );
@@ -117,6 +134,17 @@ const dbHelpers = {
         db.run(
             "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE username = ?",
             [attempts, lockedUntil, username],
+            callback
+        );
+    },
+
+    // Check if user can change password based on minimum age requirement (24 hours)
+    canChangePassword: (userId, callback) => {
+        db.get(
+            `SELECT password_changed_at, 
+                    datetime(password_changed_at, '+1 day') <= datetime('now') as can_change
+             FROM users WHERE id = ?`,
+            [userId],
             callback
         );
     },

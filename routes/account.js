@@ -129,18 +129,66 @@ router.post('/change-password',
                     return res.redirect('/account/change-password');
                 }
 
-                try {
-                    // Verify current password
-                    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.password_hash);
+                // Check if password can be changed based on minimum age requirement (24 hours)
+                dbHelpers.canChangePassword(user.id, async (ageErr, ageResult) => {
+                    if (ageErr) {
+                        securityLogger.error('Database error checking password age', {
+                            username: user.username,
+                            error: ageErr.message
+                        });
+                        req.session.validationErrors = [{ msg: 'Password change failed. Please try again.' }];
+                        return res.redirect('/account/change-password');
+                    }
 
-                    if (!isCurrentPasswordValid) {
+                    if (!ageResult.can_change) {
+                        const passwordChangedAt = new Date(ageResult.password_changed_at);
+                        const nextAllowedChange = new Date(passwordChangedAt.getTime() + 24 * 60 * 60 * 1000);
+                        const timeRemaining = Math.ceil((nextAllowedChange - new Date()) / (60 * 60 * 1000));
+                        
+                        securityLogger.warn('Password change attempt blocked due to minimum age requirement', {
+                            username: user.username,
+                            ip: req.ip,
+                            passwordChangedAt: passwordChangedAt.toISOString(),
+                            hoursRemaining: timeRemaining
+                        });
+                        
+                        req.session.validationErrors = [{
+                            msg: `Password was changed recently. You must wait at least 24 hours between password changes. Try again in ${timeRemaining} hour(s).`
+                        }];
+                        req.session.hasValidationErrors = true;
+                        
+                        return req.session.save((err) => {
+                            if (err) {
+                                securityLogger.error('Session save error during password age validation', {
+                                    username: user.username,
+                                    error: err.message
+                                });
+                            }
+                            res.redirect('/account/change-password?errors=1');
+                        });
+                    }
+
+                    // Continue with password validation if age check passes
+                    try {
+                        // Verify current password
+                        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, userData.password_hash);                    if (!isCurrentPasswordValid) {
                         securityLogger.warn('Invalid current password during password change', {
                             username: user.username,
                             ip: req.ip,
                             userAgent: req.get('User-Agent')
                         });
                         req.session.validationErrors = [{ msg: 'Current password is incorrect.' }];
-                        return saveSessionAndRedirect(req, res, '/account/change-password');
+                        req.session.hasValidationErrors = true;
+                        
+                        return req.session.save((err) => {
+                            if (err) {
+                                securityLogger.error('Session save error during password validation', {
+                                    username: user.username,
+                                    error: err.message
+                                });
+                            }
+                            res.redirect('/account/change-password?errors=1');
+                        });
                     }
 
                     // Check if new password is different from current
@@ -150,7 +198,17 @@ router.post('/change-password',
                             username: user.username
                         });
                         req.session.validationErrors = [{ msg: 'New password must be different from current password.' }];
-                        return saveSessionAndRedirect(req, res, '/account/change-password');
+                        req.session.hasValidationErrors = true;
+                        
+                        return req.session.save((err) => {
+                            if (err) {
+                                securityLogger.error('Session save error during same password validation', {
+                                    username: user.username,
+                                    error: err.message
+                                });
+                            }
+                            res.redirect('/account/change-password?errors=1');
+                        });
                     }
 
                     // Hash new password
@@ -178,14 +236,15 @@ router.post('/change-password',
                         res.redirect('/account/change-password');
                     });
 
-                } catch (compareError) {
-                    securityLogger.error('Password comparison failed during password change', {
-                        username: user.username,
-                        error: compareError.message
-                    });
-                    req.session.validationErrors = [{ msg: 'Password change failed. Please try again.' }];
-                    res.redirect('/account/change-password');
-                }
+                    } catch (compareError) {
+                        securityLogger.error('Password comparison failed during password change', {
+                            username: user.username,
+                            error: compareError.message
+                        });
+                        req.session.validationErrors = [{ msg: 'Password change failed. Please try again.' }];
+                        res.redirect('/account/change-password');
+                    }
+                }); // End of canChangePassword callback
             });
 
         } catch (error) {
