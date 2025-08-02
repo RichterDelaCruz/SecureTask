@@ -296,7 +296,7 @@ const validationRules = {
         .withMessage('Password must be 6-128 characters and contain at least one letter and one number')
         .custom((value) => {
             // Additional password strength validation
-            const commonPasswords = ['password', '12345678', 'qwerty123', 'admin123', 'password123'];
+            const commonPasswords = ['password', '12345678', 'qwerty123', 'password123'];
             if (commonPasswords.some(common => value.toLowerCase().includes(common.toLowerCase()))) {
                 throw new Error('Password contains common patterns and has been rejected');
             }
