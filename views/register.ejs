@@ -279,12 +279,11 @@
                             autocomplete="new-password"
                         />
                     </div>
-                </form>
             </div>
             
             <div class="card-footer">
                 <div class="space-y-4">
-                    <button type="submit" form="register-form" class="btn btn-primary">
+                    <button type="submit" class="btn btn-primary">
                         Register
                     </button>
                     
@@ -296,6 +295,7 @@
                     </p>
                 </div>
             </div>
+        </form>
         </div>
 
         <!-- Registration Info -->
@@ -308,12 +308,8 @@
     <!-- Password Validation Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
             const passwordInput = document.getElementById('password');
             const confirmInput = document.getElementById('confirmPassword');
-            
-            // Add form id for the submit button
-            form.id = 'register-form';
             
             function checkPasswordMatch() {
                 if (confirmInput.value && passwordInput.value !== confirmInput.value) {

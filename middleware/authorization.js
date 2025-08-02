@@ -1,5 +1,5 @@
 const { securityLogger } = require('../utils/logger');
-const { dbHelpers } = require('../database/init');
+const { db, dbHelpers } = require('../database/init');
 const { sanitize, VALIDATION_LIMITS } = require('../utils/validation');
 
 // Centralized permissions mapping
@@ -167,7 +167,7 @@ const getTaskCreatorId = (req) => {
         try {
             const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
             
-            dbHelpers.db.get(
+            db.get(
                 "SELECT created_by FROM tasks WHERE id = ?",
                 [validatedTaskId],
                 (err, row) => {
@@ -205,7 +205,7 @@ const getTaskAssigneeId = (req) => {
         try {
             const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
             
-            dbHelpers.db.get(
+            db.get(
                 "SELECT assigned_to FROM tasks WHERE id = ?",
                 [validatedTaskId],
                 (err, row) => {
