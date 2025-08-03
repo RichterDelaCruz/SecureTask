@@ -17,7 +17,11 @@ db.serialize(() => {
         locked_until DATETIME NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        password_changed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        password_changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        last_login_at DATETIME NULL,
+        last_login_ip TEXT NULL,
+        last_failed_login_at DATETIME NULL,
+        last_failed_login_ip TEXT NULL
     )`);
 
     // Add password_changed_at column to existing users table if it doesn't exist
@@ -34,6 +38,22 @@ db.serialize(() => {
                 }
             });
         }
+    });
+
+    // Add login tracking columns to existing users table if they don't exist
+    const loginTrackingColumns = [
+        { name: 'last_login_at', type: 'DATETIME DEFAULT NULL' },
+        { name: 'last_login_ip', type: 'TEXT DEFAULT NULL' },
+        { name: 'last_failed_login_at', type: 'DATETIME DEFAULT NULL' },
+        { name: 'last_failed_login_ip', type: 'TEXT DEFAULT NULL' }
+    ];
+
+    loginTrackingColumns.forEach(column => {
+        db.run(`ALTER TABLE users ADD COLUMN ${column.name} ${column.type}`, (err) => {
+            if (err && !err.message.includes('duplicate column name')) {
+                console.error(`Error adding ${column.name} column:`, err.message);
+            }
+        });
     });
 
     // Tasks table
@@ -81,7 +101,7 @@ db.serialize(() => {
                 db.run(
                     "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                     ['admin', hash, 'Administrator'],
-                    function(err) {
+                    function (err) {
                         if (err) {
                             console.error('Error creating default admin user:', err.message);
                         } else {
@@ -134,6 +154,24 @@ const dbHelpers = {
         db.run(
             "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE username = ?",
             [attempts, lockedUntil, username],
+            callback
+        );
+    },
+
+    // Update last successful login information
+    updateLastLogin: (username, ipAddress, callback) => {
+        db.run(
+            "UPDATE users SET last_login_at = CURRENT_TIMESTAMP, last_login_ip = ? WHERE username = ?",
+            [ipAddress, username],
+            callback
+        );
+    },
+
+    // Update last failed login information
+    updateLastFailedLogin: (username, ipAddress, callback) => {
+        db.run(
+            "UPDATE users SET last_failed_login_at = CURRENT_TIMESTAMP, last_failed_login_ip = ? WHERE username = ?",
+            [ipAddress, username],
             callback
         );
     },
@@ -229,7 +267,7 @@ const dbHelpers = {
         db.run(
             "INSERT INTO system_logs (level, message, username, ip_address, user_agent, additional_data) VALUES (?, ?, ?, ?, ?, ?)",
             [level, message, username, ipAddress, userAgent, additionalData],
-            callback || (() => {})
+            callback || (() => { })
         );
     },
 

@@ -5,11 +5,11 @@ const { securityLogger } = require('../utils/logger');
 const { validationSets, handleValidationErrors, injectValidationData } = require('../utils/validation');
 const { redirectIfAuthenticated } = require('../middleware/auth');
 const { asyncErrorHandler } = require('../middleware/error-handler');
-const { 
-    logAuthenticationEvent, 
-    logSystemEvent, 
-    SECURITY_EVENTS, 
-    RISK_LEVELS 
+const {
+    logAuthenticationEvent,
+    logSystemEvent,
+    SECURITY_EVENTS,
+    RISK_LEVELS
 } = require('../utils/security-logger');
 
 const router = express.Router();
@@ -28,14 +28,14 @@ router.get('/', (req, res) => {
 
 // Registration page
 router.get('/register', redirectIfAuthenticated, (req, res) => {
-    res.render('register', { 
+    res.render('register', {
         title: 'Register - SecureTask',
         user: null
     });
 });
 
 // Registration form handler
-router.post('/register', 
+router.post('/register',
     redirectIfAuthenticated,
     validationSets.registration,
     handleValidationErrors,
@@ -46,17 +46,17 @@ router.post('/register',
             // Check if username already exists
             dbHelpers.getUserByUsername(username, async (err, existingUser) => {
                 if (err) {
-                    securityLogger.error('Database error during registration', { 
-                        error: err.message, 
-                        ip: req.ip 
+                    securityLogger.error('Database error during registration', {
+                        error: err.message,
+                        ip: req.ip
                     });
                     req.session.validationErrors = [{ msg: 'Registration failed. Please try again.' }];
                     return res.redirect('/register');
                 }
 
                 if (existingUser) {
-                    securityLogger.warn('Registration attempt with existing username', { 
-                        username, 
+                    securityLogger.warn('Registration attempt with existing username', {
+                        username,
                         ip: req.ip,
                         userAgent: req.get('User-Agent')
                     });
@@ -70,18 +70,18 @@ router.post('/register',
                     const passwordHash = await bcrypt.hash(password, saltRounds);
 
                     // Create new user with Employee role
-                    dbHelpers.createUser(username, passwordHash, 'Employee', function(err) {
+                    dbHelpers.createUser(username, passwordHash, 'Employee', function (err) {
                         if (err) {
-                            logAuthenticationEvent(SECURITY_EVENTS.REGISTRATION_FAILURE, req, false, { 
-                                username, 
-                                error: err.message 
+                            logAuthenticationEvent(SECURITY_EVENTS.REGISTRATION_FAILURE, req, false, {
+                                username,
+                                error: err.message
                             });
                             req.session.validationErrors = [{ msg: 'Registration failed. Please try again.' }];
                             return res.redirect('/register');
                         }
 
-                        logAuthenticationEvent(SECURITY_EVENTS.REGISTRATION_SUCCESS, req, true, { 
-                            username, 
+                        logAuthenticationEvent(SECURITY_EVENTS.REGISTRATION_SUCCESS, req, true, {
+                            username,
                             role: 'Employee'
                         });
 
@@ -89,19 +89,19 @@ router.post('/register',
                         res.redirect('/login');
                     });
                 } catch (hashError) {
-                    securityLogger.error('Password hashing failed during registration', { 
-                        username, 
-                        error: hashError.message, 
-                        ip: req.ip 
+                    securityLogger.error('Password hashing failed during registration', {
+                        username,
+                        error: hashError.message,
+                        ip: req.ip
                     });
                     req.session.validationErrors = [{ msg: 'Registration failed. Please try again.' }];
                     res.redirect('/register');
                 }
             });
         } catch (error) {
-            securityLogger.error('Unexpected error during registration', { 
-                error: error.message, 
-                ip: req.ip 
+            securityLogger.error('Unexpected error during registration', {
+                error: error.message,
+                ip: req.ip
             });
             req.session.validationErrors = [{ msg: 'Registration failed. Please try again.' }];
             res.redirect('/register');
@@ -113,8 +113,8 @@ router.post('/register',
 router.get('/login', redirectIfAuthenticated, (req, res) => {
     const successMessage = req.session.successMessage;
     delete req.session.successMessage;
-    
-    res.render('login', { 
+
+    res.render('login', {
         title: 'Login - SecureTask',
         user: null,
         successMessage
@@ -122,7 +122,7 @@ router.get('/login', redirectIfAuthenticated, (req, res) => {
 });
 
 // Login form handler
-router.post('/login', 
+router.post('/login',
     redirectIfAuthenticated,
     validationSets.login,
     handleValidationErrors,
@@ -131,10 +131,10 @@ router.post('/login',
 
         dbHelpers.getUserByUsername(username, async (err, user) => {
             if (err) {
-                securityLogger.error('Database error during login', { 
-                    username, 
-                    error: err.message, 
-                    ip: req.ip 
+                securityLogger.error('Database error during login', {
+                    username,
+                    error: err.message,
+                    ip: req.ip
                 });
                 req.session.validationErrors = [{ msg: 'Login failed. Please check your credentials.' }];
                 return res.redirect('/login');
@@ -144,8 +144,8 @@ router.post('/login',
             const genericError = 'Invalid username or password';
 
             if (!user) {
-                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_FAILURE, req, false, { 
-                    username, 
+                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_FAILURE, req, false, {
+                    username,
                     reason: 'non_existent_username'
                 });
                 req.session.validationErrors = [{ msg: genericError }];
@@ -154,8 +154,8 @@ router.post('/login',
 
             // Check if account is locked
             if (user.locked_until && new Date() < new Date(user.locked_until)) {
-                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_LOCKED_ACCOUNT, req, false, { 
-                    username, 
+                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_LOCKED_ACCOUNT, req, false, {
+                    username,
                     lockedUntil: user.locked_until
                 });
                 req.session.validationErrors = [{ msg: 'Account is temporarily locked due to multiple failed attempts. Please try again later.' }];
@@ -167,6 +167,16 @@ router.post('/login',
                 const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
                 if (!isPasswordValid) {
+                    // Update last failed login attempt before incrementing failed attempts
+                    dbHelpers.updateLastFailedLogin(username, req.ip, (updateErr) => {
+                        if (updateErr) {
+                            securityLogger.error('Failed to update last failed login', {
+                                username,
+                                error: updateErr.message
+                            });
+                        }
+                    });
+
                     // Increment failed attempts
                     const newFailedAttempts = user.failed_attempts + 1;
                     let lockedUntil = null;
@@ -178,15 +188,15 @@ router.post('/login',
 
                     dbHelpers.updateFailedAttempts(username, newFailedAttempts, lockedUntil, (updateErr) => {
                         if (updateErr) {
-                            securityLogger.error('Failed to update failed login attempts', { 
-                                username, 
-                                error: updateErr.message 
+                            securityLogger.error('Failed to update failed login attempts', {
+                                username,
+                                error: updateErr.message
                             });
                         }
                     });
 
-                    logAuthenticationEvent(SECURITY_EVENTS.LOGIN_FAILURE, req, false, { 
-                        username, 
+                    logAuthenticationEvent(SECURITY_EVENTS.LOGIN_FAILURE, req, false, {
+                        username,
                         failedAttempts: newFailedAttempts,
                         reason: 'invalid_password'
                     });
@@ -195,17 +205,35 @@ router.post('/login',
                     return res.redirect('/login');
                 }
 
+                // Store last login info for display before updating it
+                const lastLoginInfo = {
+                    lastLoginAt: user.last_login_at,
+                    lastLoginIp: user.last_login_ip,
+                    lastFailedLoginAt: user.last_failed_login_at,
+                    lastFailedLoginIp: user.last_failed_login_ip
+                };
+
                 // Reset failed attempts on successful login
                 if (user.failed_attempts > 0) {
                     dbHelpers.updateFailedAttempts(username, 0, null, (updateErr) => {
                         if (updateErr) {
-                            securityLogger.error('Failed to reset failed login attempts', { 
-                                username, 
-                                error: updateErr.message 
+                            securityLogger.error('Failed to reset failed login attempts', {
+                                username,
+                                error: updateErr.message
                             });
                         }
                     });
                 }
+
+                // Update last successful login information
+                dbHelpers.updateLastLogin(username, req.ip, (updateErr) => {
+                    if (updateErr) {
+                        securityLogger.error('Failed to update last successful login', {
+                            username,
+                            error: updateErr.message
+                        });
+                    }
+                });
 
                 // Create session
                 req.session.user = {
@@ -214,18 +242,21 @@ router.post('/login',
                     role: user.role
                 };
 
-                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_SUCCESS, req, true, { 
-                    username, 
+                // Store last login info in session for display on dashboard
+                req.session.lastLoginInfo = lastLoginInfo;
+
+                logAuthenticationEvent(SECURITY_EVENTS.LOGIN_SUCCESS, req, true, {
+                    username,
                     role: user.role
                 });
 
                 res.redirect('/dashboard');
 
             } catch (compareError) {
-                securityLogger.error('Password comparison failed during login', { 
-                    username, 
-                    error: compareError.message, 
-                    ip: req.ip 
+                securityLogger.error('Password comparison failed during login', {
+                    username,
+                    error: compareError.message,
+                    ip: req.ip
                 });
                 req.session.validationErrors = [{ msg: genericError }];
                 res.redirect('/login');

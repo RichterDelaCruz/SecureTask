@@ -1,21 +1,21 @@
 const express = require('express');
 const { dbHelpers } = require('../database/init');
 const { securityLogger } = require('../utils/logger');
-const { 
-    validationSets, 
-    handleValidationErrors, 
-    injectValidationData, 
-    sanitize, 
-    VALIDATION_LIMITS 
+const {
+    validationSets,
+    handleValidationErrors,
+    injectValidationData,
+    sanitize,
+    VALIDATION_LIMITS
 } = require('../utils/validation');
 const { authorizeRole } = require('../middleware/auth');
-const { 
-    requirePermission, 
-    requireResourceOwnership, 
-    getTaskCreatorId, 
+const {
+    requirePermission,
+    requireResourceOwnership,
+    getTaskCreatorId,
     getTaskAssigneeId,
-    validateBusinessLogic, 
-    canAssignTaskToUser 
+    validateBusinessLogic,
+    canAssignTaskToUser
 } = require('../middleware/authorization');
 const { sensitiveOperationLimiter } = require('../middleware/authz-audit');
 
@@ -25,104 +25,141 @@ const router = express.Router();
 router.use(injectValidationData);
 
 // Main dashboard route
-router.get('/', 
+router.get('/',
     requirePermission('account:view-profile'), // Base permission for accessing dashboard
     (req, res) => {
-    const user = req.session.user;
-    
-    // Validate user role is still valid
-    if (!user.role || !['Administrator', 'Project Manager', 'Employee'].includes(user.role)) {
-        securityLogger.error('Invalid user role accessing dashboard', {
-            username: user.username,
-            role: user.role,
-            ip: req.ip,
-            timestamp: new Date().toISOString()
-        });
-        req.session.destroy();
-        return res.redirect('/login');
-    }
-    
-    switch (user.role) {
-        case 'Administrator':
-            // Get system statistics for admin dashboard
-            dbHelpers.getUserCounts((err, userCounts) => {
-                if (err) {
-                    securityLogger.error('Failed to fetch user counts for admin dashboard', {
-                        username: user.username,
-                        error: err.message,
-                        ip: req.ip,
-                        timestamp: new Date().toISOString()
-                    });
-                    userCounts = [];
-                }
+        const user = req.session.user;
 
-                dbHelpers.getTotalTaskCount((err, taskCount) => {
+        // Get last login info from session and clear it after use
+        const lastLoginInfo = req.session.lastLoginInfo;
+        delete req.session.lastLoginInfo;
+
+        // Validate user role is still valid
+        if (!user.role || !['Administrator', 'Project Manager', 'Employee'].includes(user.role)) {
+            securityLogger.error('Invalid user role accessing dashboard', {
+                username: user.username,
+                role: user.role,
+                ip: req.ip,
+                timestamp: new Date().toISOString()
+            });
+            req.session.destroy();
+            return res.redirect('/login');
+        }
+
+        switch (user.role) {
+            case 'Administrator':
+                // Get system statistics for admin dashboard
+                dbHelpers.getUserCounts((err, userCounts) => {
                     if (err) {
-                        securityLogger.error('Failed to fetch task count for admin dashboard', {
+                        securityLogger.error('Failed to fetch user counts for admin dashboard', {
                             username: user.username,
                             error: err.message,
                             ip: req.ip,
                             timestamp: new Date().toISOString()
                         });
-                        taskCount = { count: 0 };
+                        userCounts = [];
                     }
 
-                    // Process user counts into a more usable format
-                    const stats = {
-                        totalUsers: 0,
-                        administrators: 0,
-                        projectManagers: 0,
-                        employees: 0,
-                        totalTasks: taskCount.count
-                    };
-
-                    userCounts.forEach(item => {
-                        stats.totalUsers += item.count;
-                        switch (item.role) {
-                            case 'Administrator':
-                                stats.administrators = item.count;
-                                break;
-                            case 'Project Manager':
-                                stats.projectManagers = item.count;
-                                break;
-                            case 'Employee':
-                                stats.employees = item.count;
-                                break;
+                    dbHelpers.getTotalTaskCount((err, taskCount) => {
+                        if (err) {
+                            securityLogger.error('Failed to fetch task count for admin dashboard', {
+                                username: user.username,
+                                error: err.message,
+                                ip: req.ip,
+                                timestamp: new Date().toISOString()
+                            });
+                            taskCount = { count: 0 };
                         }
-                    });
 
-                    securityLogger.info('Admin dashboard accessed', {
-                        username: user.username,
-                        ip: req.ip,
-                        timestamp: new Date().toISOString()
-                    });
+                        // Process user counts into a more usable format
+                        const stats = {
+                            totalUsers: 0,
+                            administrators: 0,
+                            projectManagers: 0,
+                            employees: 0,
+                            totalTasks: taskCount.count
+                        };
 
-                    res.render('dashboard/admin', {
-                        title: 'Administrator Dashboard - SecureTask',
-                        user: user,
-                        stats: stats
+                        userCounts.forEach(item => {
+                            stats.totalUsers += item.count;
+                            switch (item.role) {
+                                case 'Administrator':
+                                    stats.administrators = item.count;
+                                    break;
+                                case 'Project Manager':
+                                    stats.projectManagers = item.count;
+                                    break;
+                                case 'Employee':
+                                    stats.employees = item.count;
+                                    break;
+                            }
+                        });
+
+                        securityLogger.info('Admin dashboard accessed', {
+                            username: user.username,
+                            ip: req.ip,
+                            timestamp: new Date().toISOString()
+                        });
+
+                        res.render('dashboard/admin', {
+                            title: 'Administrator Dashboard - SecureTask',
+                            user: user,
+                            stats: stats,
+                            lastLoginInfo: lastLoginInfo
+                        });
                     });
                 });
-            });
-            break;
-            
-        case 'Project Manager':
-            // Get employees for task assignment dropdown
-            dbHelpers.getEmployees((err, employees) => {
-                if (err) {
-                    securityLogger.error('Failed to fetch employees for manager dashboard', {
-                        username: user.username,
-                        error: err.message,
-                        ip: req.ip,
-                        timestamp: new Date().toISOString()
-                    });
-                    employees = [];
-                }
+                break;
 
-                // Get tasks created by this manager
-                dbHelpers.getTasksByCreator(user.id, (err, tasks) => {
+            case 'Project Manager':
+                // Get employees for task assignment dropdown
+                dbHelpers.getEmployees((err, employees) => {
                     if (err) {
-                        securityLogger.error('Failed to fetch manager tasks', {
+                        securityLogger.error('Failed to fetch employees for manager dashboard', {
+                            username: user.username,
+                            error: err.message,
+                            ip: req.ip,
+                            timestamp: new Date().toISOString()
+                        });
+                        employees = [];
+                    }
+
+                    // Get tasks created by this manager
+                    dbHelpers.getTasksByCreator(user.id, (err, tasks) => {
+                        if (err) {
+                            securityLogger.error('Failed to fetch manager tasks', {
+                                username: user.username,
+                                error: err.message,
+                                ip: req.ip,
+                                timestamp: new Date().toISOString()
+                            });
+                            tasks = [];
+                        }
+
+                        securityLogger.info('Manager dashboard accessed', {
+                            username: user.username,
+                            taskCount: tasks.length,
+                            employeeCount: employees.length,
+                            ip: req.ip,
+                            timestamp: new Date().toISOString()
+                        });
+
+                        res.render('dashboard/manager', {
+                            title: 'Project Manager Dashboard - SecureTask',
+                            user: user,
+                            employees: employees,
+                            tasks: tasks,
+                            lastLoginInfo: lastLoginInfo
+                        });
+                    });
+                });
+                break;
+
+            case 'Employee':
+                // Get tasks assigned to this employee
+                dbHelpers.getTasksByAssignee(user.id, (err, tasks) => {
+                    if (err) {
+                        securityLogger.error('Failed to fetch employee tasks', {
                             username: user.username,
                             error: err.message,
                             ip: req.ip,
@@ -131,65 +168,35 @@ router.get('/',
                         tasks = [];
                     }
 
-                    securityLogger.info('Manager dashboard accessed', {
+                    securityLogger.info('Employee dashboard accessed', {
                         username: user.username,
-                        taskCount: tasks.length,
-                        employeeCount: employees.length,
+                        assignedTaskCount: tasks.length,
                         ip: req.ip,
                         timestamp: new Date().toISOString()
                     });
 
-                    res.render('dashboard/manager', {
-                        title: 'Project Manager Dashboard - SecureTask',
+                    res.render('dashboard/employee', {
+                        title: 'Employee Dashboard - SecureTask',
                         user: user,
-                        employees: employees,
-                        tasks: tasks
+                        tasks: tasks,
+                        lastLoginInfo: lastLoginInfo
                     });
                 });
-            });
-            break;
-            
-        case 'Employee':
-            // Get tasks assigned to this employee
-            dbHelpers.getTasksByAssignee(user.id, (err, tasks) => {
-                if (err) {
-                    securityLogger.error('Failed to fetch employee tasks', {
-                        username: user.username,
-                        error: err.message,
-                        ip: req.ip,
-                        timestamp: new Date().toISOString()
-                    });
-                    tasks = [];
-                }
+                break;
 
-                securityLogger.info('Employee dashboard accessed', {
+            default:
+                securityLogger.error('Unknown user role accessing dashboard', {
                     username: user.username,
-                    assignedTaskCount: tasks.length,
+                    role: user.role,
                     ip: req.ip,
                     timestamp: new Date().toISOString()
                 });
-
-                res.render('dashboard/employee', {
-                    title: 'Employee Dashboard - SecureTask',
-                    user: user,
-                    tasks: tasks
+                res.status(403).render('error', {
+                    message: 'Access denied. Invalid user role.',
+                    user: user
                 });
-            });
-            break;
-            
-        default:
-            securityLogger.error('Unknown user role accessing dashboard', {
-                username: user.username,
-                role: user.role,
-                ip: req.ip,
-                timestamp: new Date().toISOString()
-            });
-            res.status(403).render('error', {
-                message: 'Access denied. Invalid user role.',
-                user: user
-            });
-    }
-});
+        }
+    });
 
 // Create new task (Project Manager only)
 router.post('/create-task',
@@ -225,7 +232,7 @@ router.post('/create-task',
             }
 
             // Create the task
-            dbHelpers.createTask(title, description, priority, user.id, assignedTo, function(err) {
+            dbHelpers.createTask(title, description, priority, user.id, assignedTo, function (err) {
                 if (err) {
                     securityLogger.error('Failed to create task', {
                         username: user.username,
@@ -265,7 +272,7 @@ router.post('/update-task-status',
         try {
             const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
             const validatedStatus = sanitize.validateEnum(status, ['Pending', 'Completed'], 'Task status');
-            
+
             securityLogger.info('Task status update request', {
                 username: user.username,
                 taskId: validatedTaskId,
@@ -285,7 +292,7 @@ router.post('/update-task-status',
         }
 
         // Update task status (only if it's assigned to this user)
-        dbHelpers.updateTaskStatus(taskId, status, user.id, function(err) {
+        dbHelpers.updateTaskStatus(taskId, status, user.id, function (err) {
             if (err) {
                 securityLogger.error('Failed to update task status', {
                     username: user.username,
@@ -334,7 +341,7 @@ router.post('/reassign-task',
         try {
             const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
             const validatedNewAssignedTo = sanitize.validateInteger(newAssignedTo, VALIDATION_LIMITS.USER_ID.min, VALIDATION_LIMITS.USER_ID.max);
-            
+
             securityLogger.info('Task reassignment request', {
                 username: user.username,
                 taskId: validatedTaskId,
@@ -376,7 +383,7 @@ router.post('/reassign-task',
             }
 
             // Reassign the task (only if it was created by this user)
-            dbHelpers.reassignTask(taskId, newAssignedTo, user.id, function(err) {
+            dbHelpers.reassignTask(taskId, newAssignedTo, user.id, function (err) {
                 if (err) {
                     securityLogger.error('Failed to reassign task', {
                         username: user.username,
@@ -425,7 +432,7 @@ router.post('/delete-task',
         // Additional server-side validation (defense in depth)
         try {
             const validatedTaskId = sanitize.validateInteger(taskId, VALIDATION_LIMITS.TASK_ID.min, VALIDATION_LIMITS.TASK_ID.max);
-            
+
             securityLogger.info('Task deletion request', {
                 username: user.username,
                 taskId: validatedTaskId,
@@ -443,7 +450,7 @@ router.post('/delete-task',
         }
 
         // Delete task (only if it was created by this user)
-        dbHelpers.deleteTask(taskId, user.id, function(err) {
+        dbHelpers.deleteTask(taskId, user.id, function (err) {
             if (err) {
                 securityLogger.error('Failed to delete task', {
                     username: user.username,
